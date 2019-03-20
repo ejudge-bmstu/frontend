@@ -28,7 +28,7 @@ username (Cred val _) =
 
 credHeader : Cred -> Http.Header
 credHeader (Cred _ tokens) =
-    Http.header "authorization" ("Token " ++ tokens.accessToken)
+    Http.header "authorization" ("Bearer " ++ tokens.accessToken)
 
 
 credDecoder : Decoder Cred

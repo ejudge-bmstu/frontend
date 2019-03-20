@@ -16,7 +16,7 @@ import Viewer exposing (Viewer)
 
 
 type Model
-    = Redirect Session
+    = Init Session
     | NotFound Session
     | Root Root.Model
 
@@ -28,7 +28,7 @@ type Model
 init : Maybe Viewer -> Url -> Nav.Key -> ( Model, Cmd Msg )
 init maybeViewer url navKey =
     changeRouteTo (Route.fromUrl url)
-        (Redirect (Session.fromViewer navKey maybeViewer))
+        (Init (Session.fromViewer navKey maybeViewer))
 
 
 
@@ -48,7 +48,7 @@ view model =
             }
     in
     case model of
-        Redirect _ ->
+        Init _ ->
             viewPage Page.Other (\_ -> Ignored) Blank.view
 
         NotFound _ ->
@@ -77,7 +77,7 @@ type Msg
 toSession : Model -> Session
 toSession page =
     case page of
-        Redirect session ->
+        Init session ->
             session
 
         NotFound session ->
@@ -130,10 +130,6 @@ update msg model =
             Root.update subMsg home
                 |> updateWith Root GotRootMsg
 
-        -- ( GotSession session, Redirect _ ) ->
-        --     ( Redirect session
-        --     , Route.replaceUrl (Session.navKey session) Route.Root
-        --     )
         ( _, _ ) ->
             ( model, Cmd.none )
 
@@ -155,11 +151,9 @@ subscriptions model =
         NotFound _ ->
             Sub.none
 
-        Redirect _ ->
+        Init _ ->
             Sub.none
 
-        -- Redirect _ ->
-        --     Session.changes GotSession (Session.navKey (toSession model))
         Root root ->
             Sub.map GotRootMsg (Root.subscriptions root)
 
