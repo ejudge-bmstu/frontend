@@ -1,8 +1,9 @@
-port module Api exposing (Cred, application, delete, get, post, put, storeCredWith, username, viewerChanges)
+port module Api exposing (application, delete, get, login, logout, post, put, username, viewerChanges)
 
 import Api.Endpoint as Endpoint exposing (Endpoint)
 import Browser
 import Browser.Navigation as Nav
+import Cred exposing (Cred(..))
 import Http exposing (Body, Expect)
 import Json.Decode as Decode exposing (Decoder, Value, decodeString, field, string)
 import Json.Decode.Pipeline as Pipeline exposing (optional, required)
@@ -11,14 +12,11 @@ import RemoteData exposing (..)
 import Tokens exposing (Tokens)
 import Url exposing (Url)
 import Username exposing (Username)
+import Viewer exposing (Viewer)
 
 
 
 -- CRED
-
-
-type Cred
-    = Cred Username Tokens
 
 
 username : Cred -> Username
@@ -31,24 +29,17 @@ credHeader (Cred _ tokens) =
     Http.header "authorization" ("Bearer " ++ tokens.accessToken)
 
 
-credDecoder : Decoder Cred
-credDecoder =
-    Decode.succeed Cred
-        |> required "username" Username.decoder
-        |> required "tokens" Tokens.decoder
-
-
 
 -- PERSISTENCE
 
 
-decode : Decoder (Cred -> viewer) -> Value -> Result Decode.Error viewer
-decode decoder value =
+decode : Value -> Result Decode.Error Viewer
+decode value =
     Decode.decodeValue Decode.string value
         |> Result.andThen
             (\str ->
                 Decode.decodeString
-                    (Decode.field "user" (decoderFromCred decoder))
+                    (Decode.field "user" (decoderFromCred Viewer.decoder))
                     str
             )
 
@@ -56,34 +47,15 @@ decode decoder value =
 port onStoreChange : (Value -> msg) -> Sub msg
 
 
-viewerChanges : (Maybe viewer -> msg) -> Decoder (Cred -> viewer) -> Sub msg
-viewerChanges toMsg decoder =
-    onStoreChange (\value -> toMsg (decodeFromChange decoder value))
+viewerChanges : (Maybe Viewer -> msg) -> Sub msg
+viewerChanges toMsg =
+    onStoreChange (\value -> toMsg (decodeFromChange value))
 
 
-decodeFromChange : Decoder (Cred -> viewer) -> Value -> Maybe viewer
-decodeFromChange viewerDecoder val =
-    Decode.decodeValue (storageDecoder viewerDecoder) val
+decodeFromChange : Value -> Maybe Viewer
+decodeFromChange val =
+    Decode.decodeValue storageDecoder val
         |> Result.toMaybe
-
-
-storeCredWith : Cred -> Cmd msg
-storeCredWith (Cred uname token) =
-    let
-        json =
-            Encode.object
-                [ ( "user"
-                  , Encode.object
-                        [ ( "username", Username.encode uname )
-                        , ( "tokens", Tokens.encode token )
-                        ]
-                  )
-                ]
-    in
-    storeCache (Just json)
-
-
-port storeCache : Maybe Value -> Cmd msg
 
 
 
@@ -91,8 +63,8 @@ port storeCache : Maybe Value -> Cmd msg
 -- APPLICATION
 
 
-type alias ProgramDescription model msg viewer =
-    { init : Maybe viewer -> Url -> Nav.Key -> ( model, Cmd msg )
+type alias ProgramDescription model msg =
+    { init : Maybe Viewer -> Url -> Nav.Key -> ( model, Cmd msg )
     , onUrlChange : Url -> msg
     , onUrlRequest : Browser.UrlRequest -> msg
     , subscriptions : model -> Sub msg
@@ -102,16 +74,15 @@ type alias ProgramDescription model msg viewer =
 
 
 application :
-    Decoder (Cred -> viewer)
-    -> ProgramDescription model msg viewer
+    ProgramDescription model msg
     -> Program Value model msg
-application viewerDecoder config =
+application config =
     let
         init flags url navKey =
             let
                 maybeViewer =
                     Decode.decodeValue Decode.string flags
-                        |> Result.andThen (Decode.decodeString (storageDecoder viewerDecoder))
+                        |> Result.andThen (Decode.decodeString storageDecoder)
                         |> Result.toMaybe
             in
             config.init maybeViewer url navKey
@@ -126,9 +97,9 @@ application viewerDecoder config =
         }
 
 
-storageDecoder : Decoder (Cred -> viewer) -> Decoder viewer
-storageDecoder viewerDecoder =
-    Decode.field "user" (decoderFromCred viewerDecoder)
+storageDecoder : Decoder Viewer
+storageDecoder =
+    Decode.field "user" (decoderFromCred Viewer.decoder)
 
 
 
@@ -222,8 +193,21 @@ delete url cred body msg decoder =
         }
 
 
+login : Http.Body -> (WebData a -> msg) -> Decoder (Cred -> a) -> Cmd msg
+login body toMsg decoder =
+    post Endpoint.login Nothing body toMsg (Decode.field "user" (decoderFromCred decoder))
+
+
+logout : Cmd msg
+logout =
+    storeCache Nothing
+
+
+port storeCache : Maybe Value -> Cmd msg
+
+
 decoderFromCred : Decoder (Cred -> a) -> Decoder a
 decoderFromCred decoder =
     Decode.map2 (\fromCred cred -> fromCred cred)
         decoder
-        credDecoder
+        Cred.credDecoder

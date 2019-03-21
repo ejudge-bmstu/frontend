@@ -1,4 +1,4 @@
-module Api.Endpoint exposing (Endpoint, request)
+module Api.Endpoint exposing (Endpoint, login, request)
 
 import Http
 import Url.Builder exposing (QueryParameter)
@@ -43,11 +43,16 @@ unwrap (Endpoint str) =
 url : List String -> List QueryParameter -> Endpoint
 url paths queryParams =
     Url.Builder.crossOrigin host
-        ("api" :: paths)
+        paths
         queryParams
         |> Endpoint
 
 
 host : String
 host =
-    "localhost:8080"
+    "http://localhost:3000"
+
+
+login : Endpoint
+login =
+    url [ "login" ] []

@@ -1,12 +1,15 @@
-module Main exposing (Model(..), Msg(..), changeRouteTo, init, main, subscriptions, toSession, update, updateWith, view)
+port module Main exposing (main)
 
-import Api exposing (Cred)
+import Api
 import Browser exposing (Document)
 import Browser.Navigation as Nav
+import Cred exposing (Cred)
+import Debug exposing (..)
 import Html exposing (..)
 import Json.Decode as Decode exposing (Value)
 import Page exposing (Page)
 import Page.Blank as Blank
+import Page.Login as Login
 import Page.NotFound as NotFound
 import Page.Root as Root
 import Route exposing (Route)
@@ -15,10 +18,14 @@ import Url exposing (Url)
 import Viewer exposing (Viewer)
 
 
+port shit : Int -> Cmd msg
+
+
 type Model
     = Init Session
     | NotFound Session
     | Root Root.Model
+    | Login Login.Model
 
 
 
@@ -57,6 +64,9 @@ view model =
         Root root ->
             viewPage Page.Root GotRootMsg (Root.view root)
 
+        Login login ->
+            viewPage Page.Root GotLoginMsg (Login.view login)
+
 
 
 -- UPDATE
@@ -68,10 +78,7 @@ type Msg
     | ChangedUrl Url
     | ClickedLink Browser.UrlRequest
     | GotRootMsg Root.Msg
-
-
-
--- | GotSession Session
+    | GotLoginMsg Login.Msg
 
 
 toSession : Model -> Session
@@ -85,6 +92,9 @@ toSession page =
 
         Root root ->
             Root.toSession root
+
+        Login model ->
+            Login.toSession model
 
 
 changeRouteTo : Maybe Route -> Model -> ( Model, Cmd Msg )
@@ -100,6 +110,13 @@ changeRouteTo maybeRoute model =
         Just Route.Root ->
             Root.init session
                 |> updateWith Root GotRootMsg
+
+        Just Route.Login ->
+            Login.init session
+                |> updateWith Login GotRootMsg
+
+        Just Route.Logout ->
+            ( model, Cmd.none )
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -130,6 +147,10 @@ update msg model =
             Root.update subMsg home
                 |> updateWith Root GotRootMsg
 
+        ( GotLoginMsg subMsg, Login login ) ->
+            Login.update subMsg login
+                |> updateWith Login GotLoginMsg
+
         ( _, _ ) ->
             ( model, Cmd.none )
 
@@ -157,6 +178,9 @@ subscriptions model =
         Root root ->
             Sub.map GotRootMsg (Root.subscriptions root)
 
+        Login login ->
+            Sub.map GotLoginMsg (Login.subscriptions login)
+
 
 
 -- MAIN
@@ -164,7 +188,7 @@ subscriptions model =
 
 main : Program Value Model Msg
 main =
-    Api.application Viewer.decoder
+    Api.application
         { init = init
         , onUrlChange = ChangedUrl
         , onUrlRequest = ClickedLink
