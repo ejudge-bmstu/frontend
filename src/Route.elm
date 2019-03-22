@@ -13,12 +13,18 @@ import Url.Parser as Parser exposing ((</>), Parser, oneOf, s, string)
 
 type Route
     = Root
+    | Login
+    | Logout
+    | Register
 
 
 parser : Parser (Route -> a) a
 parser =
     oneOf
         [ Parser.map Root Parser.top
+        , Parser.map Login (Parser.s "login")
+        , Parser.map Logout (Parser.s "logout")
+        , Parser.map Register (Parser.s "register")
         ]
 
 
@@ -38,8 +44,7 @@ replaceUrl key route =
 
 fromUrl : Url -> Maybe Route
 fromUrl url =
-    { url | path = Maybe.withDefault "" url.fragment, fragment = Nothing }
-        |> Parser.parse parser
+    Parser.parse parser url
 
 
 
@@ -53,5 +58,14 @@ routeToString page =
             case page of
                 Root ->
                     []
+
+                Login ->
+                    [ "login" ]
+
+                Logout ->
+                    [ "logout" ]
+
+                Register ->
+                    [ "register" ]
     in
     "/" ++ String.join "/" pieces
