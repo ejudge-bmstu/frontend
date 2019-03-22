@@ -1,6 +1,7 @@
 module Session exposing (Session, changes, cred, fromViewer, navKey, viewer)
 
 import Api
+import Bootstrap.Navbar as Navbar
 import Browser.Navigation as Nav
 import Cred exposing (Cred)
 import Json.Decode as Decode exposing (Decoder)

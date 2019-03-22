@@ -1,4 +1,4 @@
-port module Main exposing (main)
+module Main exposing (main)
 
 import Api
 import Browser exposing (Document)
@@ -11,6 +11,7 @@ import Page exposing (Page)
 import Page.Blank as Blank
 import Page.Login as Login
 import Page.NotFound as NotFound
+import Page.Register as Register
 import Page.Root as Root
 import Route exposing (Route)
 import Session exposing (Session)
@@ -18,14 +19,12 @@ import Url exposing (Url)
 import Viewer exposing (Viewer)
 
 
-port shit : Int -> Cmd msg
-
-
 type Model
     = Init Session
     | NotFound Session
     | Root Root.Model
     | Login Login.Model
+    | Register Register.Model
 
 
 
@@ -45,27 +44,44 @@ init maybeViewer url navKey =
 view : Model -> Document Msg
 view model =
     let
-        viewPage page toMsg config =
-            let
-                { title, body } =
-                    Page.view (Session.viewer (toSession model)) page config
-            in
-            { title = title
-            , body = List.map (Html.map toMsg) body
-            }
+        viewPage page toMsg config maybeNavbar =
+            case maybeNavbar of
+                Just ( navbarState, toNavbarMsg ) ->
+                    let
+                        { title, body } =
+                            Page.view (Session.viewer (toSession model)) page config navbarState toNavbarMsg
+                    in
+                    { title = title
+                    , body = List.map (Html.map toMsg) body
+                    }
+
+                Nothing ->
+                    let
+                        { title, body } =
+                            Page.viewWithoutHeader (Session.viewer (toSession model)) page config
+                    in
+                    { title = title
+                    , body = List.map (Html.map toMsg) body
+                    }
     in
     case model of
         Init _ ->
-            viewPage Page.Other (\_ -> Ignored) Blank.view
+            viewPage Page.Other (\_ -> Ignored) Blank.view Nothing
 
         NotFound _ ->
-            viewPage Page.Other (\_ -> Ignored) NotFound.view
+            viewPage Page.Other (\_ -> Ignored) NotFound.view Nothing
 
         Root root ->
-            viewPage Page.Root GotRootMsg (Root.view root)
+            viewPage Page.Root GotRootMsg (Root.view root) <|
+                Just ( root.navbarState, Root.NavbarMsg )
 
         Login login ->
-            viewPage Page.Root GotLoginMsg (Login.view login)
+            viewPage Page.Login GotLoginMsg (Login.view login) <|
+                Just ( login.navbarState, Login.NavbarMsg )
+
+        Register register ->
+            viewPage Page.Register GotRegisterMsg (Register.view register) <|
+                Just ( register.navbarState, Register.NavbarMsg )
 
 
 
@@ -79,6 +95,7 @@ type Msg
     | ClickedLink Browser.UrlRequest
     | GotRootMsg Root.Msg
     | GotLoginMsg Login.Msg
+    | GotRegisterMsg Register.Msg
 
 
 toSession : Model -> Session
@@ -95,6 +112,9 @@ toSession page =
 
         Login model ->
             Login.toSession model
+
+        Register model ->
+            Register.toSession model
 
 
 changeRouteTo : Maybe Route -> Model -> ( Model, Cmd Msg )
@@ -113,7 +133,11 @@ changeRouteTo maybeRoute model =
 
         Just Route.Login ->
             Login.init session
-                |> updateWith Login GotRootMsg
+                |> updateWith Login GotLoginMsg
+
+        Just Route.Register ->
+            Register.init session
+                |> updateWith Register GotRegisterMsg
 
         Just Route.Logout ->
             ( model, Cmd.none )
@@ -151,6 +175,10 @@ update msg model =
             Login.update subMsg login
                 |> updateWith Login GotLoginMsg
 
+        ( GotRegisterMsg subMsg, Register register ) ->
+            Register.update subMsg register
+                |> updateWith Register GotRegisterMsg
+
         ( _, _ ) ->
             ( model, Cmd.none )
 
@@ -180,6 +208,9 @@ subscriptions model =
 
         Login login ->
             Sub.map GotLoginMsg (Login.subscriptions login)
+
+        Register register ->
+            Sub.map GotRegisterMsg (Register.subscriptions register)
 
 
 

@@ -15,6 +15,7 @@ type Route
     = Root
     | Login
     | Logout
+    | Register
 
 
 parser : Parser (Route -> a) a
@@ -23,6 +24,7 @@ parser =
         [ Parser.map Root Parser.top
         , Parser.map Login (Parser.s "login")
         , Parser.map Logout (Parser.s "logout")
+        , Parser.map Register (Parser.s "register")
         ]
 
 
@@ -62,5 +64,8 @@ routeToString page =
 
                 Logout ->
                     [ "logout" ]
+
+                Register ->
+                    [ "register" ]
     in
     "/" ++ String.join "/" pieces

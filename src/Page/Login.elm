@@ -1,7 +1,4 @@
-module Page.Login exposing (Model, Msg, init, subscriptions, toSession, update, view)
-
-{-| The login page.
--}
+module Page.Login exposing (Model, Msg(..), init, subscriptions, toSession, update, view)
 
 import Api
 import Bootstrap.Button as Button
@@ -10,6 +7,10 @@ import Bootstrap.Form.Input as Input
 import Bootstrap.Grid as Grid
 import Bootstrap.Grid.Col as Col
 import Bootstrap.Grid.Row as Row
+import Bootstrap.Navbar as Navbar
+import Bootstrap.Text as Text
+import Bootstrap.Utilities.Size as Size
+import Bootstrap.Utilities.Spacing as Spacing
 import Browser.Navigation as Nav
 import Cred exposing (Cred)
 import Html exposing (..)
@@ -33,6 +34,7 @@ type alias Model =
     { session : Session
     , problems : List Problem
     , form : Form
+    , navbarState : Navbar.State
     }
 
 
@@ -42,21 +44,26 @@ type Problem
 
 
 type alias Form =
-    { email : String
+    { username : String
     , password : String
     }
 
 
-init : Session -> ( Model, Cmd msg )
+init : Session -> ( Model, Cmd Msg )
 init session =
+    let
+        ( navbarState, navbarCmd ) =
+            Navbar.initialState NavbarMsg
+    in
     ( { session = session
       , problems = []
       , form =
-            { email = ""
+            { username = ""
             , password = ""
             }
+      , navbarState = navbarState
       }
-    , Cmd.none
+    , navbarCmd
     )
 
 
@@ -66,27 +73,28 @@ init session =
 
 view : Model -> { title : String, content : Html Msg }
 view model =
-    { title = "Login"
+    { title = "Вход"
     , content =
-        Grid.container
-            [ class "Absolute-Center"
-            , class "is-Responsive"
-            ]
-            [ Grid.row
-                [ Row.middleXs
-                , Row.centerXs
-                ]
-                [ Grid.col
-                    [ Col.lg3
-                    ]
-                    [ h1 [] [ text "Вход в систему" ]
-                    , Button.linkButton
-                        [ Button.roleLink
-
-                        -- , Button.attrs [ Route.href Route.Register ]
+        div [ class "vertical-center-wrapper" ]
+            [ div [ class "vertical-center" ]
+                [ Grid.container
+                    []
+                    [ Grid.row
+                        [ Row.middleXs
+                        , Row.centerXs
+                        , Row.attrs []
                         ]
-                        [ text <| "Нет аккаунта?" ]
-                    , viewForm model.form
+                        [ Grid.col
+                            [ Col.lg4
+                            , Col.textAlign Text.alignMdCenter
+                            ]
+                            [ h1 [] [ text "Вход" ]
+                            , Button.linkButton
+                                [ Button.attrs [ Route.href Route.Register ] ]
+                                [ text <| "Нет аккаунта?" ]
+                            , viewForm model.form
+                            ]
+                        ]
                     ]
                 ]
             ]
@@ -109,29 +117,26 @@ viewProblem problem =
 
 viewForm : Form -> Html Msg
 viewForm form =
-    Form.form [ onSubmit SubmittedForm ]
+    Form.form
+        [ class "form-signin"
+        , onSubmit SubmittedForm
+        ]
         [ Form.group []
-            [ Form.label
-                [ for "myusername_auth" ]
-                [ text "Логин" ]
-            , Input.text
+            [ Input.text
                 [ Input.id "myusername_auth"
-                , Input.onInput EnteredEmail
-                , Input.value form.email
+                , Input.placeholder "Логин"
+                , Input.onInput EnteredUsername
+                , Input.value form.username
                 ]
-            ]
-        , Form.group []
-            [ Form.label
-                [ for "mypwd_auth" ]
-                [ text "Пароль" ]
             , Input.password
                 [ Input.id "mypwd_auth"
                 , Input.onInput EnteredPassword
+                , Input.placeholder "Пароль"
                 , Input.value form.password
                 ]
             ]
         , Button.button
-            [ Button.primary ]
+            [ Button.primary, Button.attrs [ Size.w100 ] ]
             [ text "Войти" ]
         ]
 
@@ -142,10 +147,11 @@ viewForm form =
 
 type Msg
     = SubmittedForm
-    | EnteredEmail String
+    | EnteredUsername String
     | EnteredPassword String
     | CompletedLogin (WebData Viewer)
     | GotSession Session
+    | NavbarMsg Navbar.State
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -163,8 +169,8 @@ update msg model =
                     , Cmd.none
                     )
 
-        EnteredEmail email ->
-            updateForm (\form -> { form | email = email }) model
+        EnteredUsername username ->
+            updateForm (\form -> { form | username = username }) model
 
         EnteredPassword password ->
             updateForm (\form -> { form | password = password }) model
@@ -184,6 +190,9 @@ update msg model =
             , Route.replaceUrl (Session.navKey session) Route.Root
             )
 
+        NavbarMsg state ->
+            ( { model | navbarState = state }, Cmd.none )
+
 
 updateForm : (Form -> Form) -> Model -> ( Model, Cmd Msg )
 updateForm transform model =
@@ -196,7 +205,10 @@ updateForm transform model =
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-    Session.changes GotSession (Session.navKey model.session)
+    Sub.batch
+        [ Session.changes GotSession (Session.navKey model.session)
+        , Navbar.subscriptions model.navbarState NavbarMsg
+        ]
 
 
 
@@ -240,7 +252,7 @@ validateField (Trimmed form) field =
     List.map (InvalidEntry field) <|
         case field of
             Email ->
-                if String.isEmpty form.email then
+                if String.isEmpty form.username then
                     [ "email can't be blank." ]
 
                 else
@@ -257,7 +269,7 @@ validateField (Trimmed form) field =
 trimFields : Form -> TrimmedForm
 trimFields form =
     Trimmed
-        { email = String.trim form.email
+        { username = String.trim form.username
         , password = String.trim form.password
         }
 
@@ -271,7 +283,7 @@ login (Trimmed form) =
     let
         user =
             Encode.object
-                [ ( "email", Encode.string form.email )
+                [ ( "email", Encode.string form.username )
                 , ( "password", Encode.string form.password )
                 ]
 
@@ -279,7 +291,7 @@ login (Trimmed form) =
             Encode.object [ ( "user", user ) ]
                 |> Http.jsonBody
     in
-    Api.login body CompletedLogin Viewer.decoder
+    Api.login body CompletedLogin
 
 
 
