@@ -25,8 +25,7 @@
 			} else {
 				localStorage.setItem(storageKey, JSON.stringify(val));
 			}
-			// Report that the new session was stored succesfully.
-			setTimeout(function () { app.ports.onStoreChange.send(val); }, 0);
+			setTimeout(function () { app.ports.onStoreChange.send(JSON.stringify(val)); }, 0);
 		});
 		// Whenever localStorage changes in another tab, report it if necessary.
 		window.addEventListener("storage", function (event) {

@@ -1,4 +1,4 @@
-port module Viewer exposing (Viewer(..), cred, decoder, store, storeCredWith)
+port module Viewer exposing (Viewer(..), cred, decoder, store, storeCache)
 
 {-| The logged-in user currently viewing this page. It stores enough data to
 be able to render the menu bar (username and avatar), along with Cred so it's
@@ -10,6 +10,7 @@ import Debug exposing (..)
 import Json.Decode as Decode exposing (Decoder)
 import Json.Decode.Pipeline exposing (custom, required)
 import Json.Encode as Encode exposing (Value)
+import Role exposing (Role)
 import Tokens
 import Username exposing (Username)
 
@@ -42,23 +43,24 @@ decoder =
 
 store : Viewer -> Cmd msg
 store (Viewer credVal) =
-    log "!" <| storeCredWith credVal
+    storeCredWith credVal
 
 
 storeCredWith : Cred -> Cmd msg
-storeCredWith (Cred uname token) =
+storeCredWith (Cred uname role token) =
     let
         json =
             Encode.object
                 [ ( "user"
                   , Encode.object
                         [ ( "username", Username.encode uname )
+                        , ( "role", Role.encode role )
                         , ( "tokens", Tokens.encode token )
                         ]
                   )
                 ]
     in
-    log "!!" <| storeCache (Just json)
+    storeCache (Just json)
 
 
 port storeCache : Maybe Value -> Cmd msg

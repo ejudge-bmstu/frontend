@@ -1,14 +1,16 @@
-port module Api exposing (application, delete, get, login, logout, post, put, username, viewerChanges)
+port module Api exposing (Response, application, delete, get, login, logout, post, put, username, viewerChanges)
 
 import Api.Endpoint as Endpoint exposing (Endpoint)
 import Browser
 import Browser.Navigation as Nav
 import Cred exposing (Cred(..))
+import Debug
 import Http exposing (Body, Expect)
 import Json.Decode as Decode exposing (Decoder, Value, decodeString, field, string)
 import Json.Decode.Pipeline as Pipeline exposing (optional, required)
 import Json.Encode as Encode
-import RemoteData exposing (..)
+import Maybe
+import Role exposing (Role)
 import Tokens exposing (Tokens)
 import Url exposing (Url)
 import Username exposing (Username)
@@ -20,13 +22,18 @@ import Viewer exposing (Viewer)
 
 
 username : Cred -> Username
-username (Cred val _) =
+username (Cred val _ _) =
     val
 
 
 credHeader : Cred -> Http.Header
-credHeader (Cred _ tokens) =
+credHeader (Cred _ _ tokens) =
     Http.header "authorization" ("Bearer " ++ tokens.accessToken)
+
+
+role : Cred -> Role
+role (Cred _ val _) =
+    val
 
 
 
@@ -44,7 +51,7 @@ decode value =
             )
 
 
-port onStoreChange : (Value -> msg) -> Sub msg
+port onStoreChange : (Maybe String -> msg) -> Sub msg
 
 
 viewerChanges : (Maybe Viewer -> msg) -> Sub msg
@@ -52,10 +59,15 @@ viewerChanges toMsg =
     onStoreChange (\value -> toMsg (decodeFromChange value))
 
 
-decodeFromChange : Value -> Maybe Viewer
+decodeFromChange : Maybe String -> Maybe Viewer
 decodeFromChange val =
-    Decode.decodeValue storageDecoder val
-        |> Result.toMaybe
+    case val of
+        Just str ->
+            Decode.decodeString storageDecoder str
+                |> Result.toMaybe
+
+        Nothing ->
+            Nothing
 
 
 
@@ -106,17 +118,65 @@ storageDecoder =
 -- HTTP
 
 
+type alias Response a =
+    Result ErrorPayload a
+
+
+type alias ErrorPayload =
+    { message : String
+    , name : String
+    }
+
+
+errorDecoder : Decode.Decoder ErrorPayload
+errorDecoder =
+    Decode.map2 ErrorPayload
+        (Decode.field "message" Decode.string)
+        (Decode.field "type" Decode.string)
+
+
+expectJson : (Response a -> msg) -> Decode.Decoder a -> Expect msg
+expectJson toMsg decoder =
+    Http.expectStringResponse toMsg <|
+        \response ->
+            case response of
+                Http.BadUrl_ url ->
+                    Err <| ErrorPayload "Bad url" "BadUrl"
+
+                Http.Timeout_ ->
+                    Err <| ErrorPayload "Timeout" "Timeout"
+
+                Http.NetworkError_ ->
+                    Err <| ErrorPayload "Network error" "NetworkError"
+
+                Http.BadStatus_ _ body ->
+                    case Decode.decodeString errorDecoder body of
+                        Ok value ->
+                            Err value
+
+                        Err err ->
+                            Err <| ErrorPayload "Bad response" "BadResponse"
+
+                Http.GoodStatus_ _ body ->
+                    case Decode.decodeString decoder body of
+                        Ok value ->
+                            Ok value
+
+                        Err err ->
+                            Err <| ErrorPayload "Bad response" "BadResponse"
+
+
 get :
     Endpoint
     -> Maybe Cred
-    -> (WebData a -> msg)
+    -> (Response a -> msg)
     -> Decoder a
     -> Cmd msg
 get url maybeCred msg decoder =
     Endpoint.request
         { method = "GET"
         , url = url
-        , expect = Http.expectJson (RemoteData.fromResult >> msg) decoder
+        , expect = expectJson msg decoder
         , headers =
             case maybeCred of
                 Just cred ->
@@ -134,14 +194,14 @@ put :
     Endpoint
     -> Cred
     -> Body
-    -> (WebData a -> msg)
+    -> (Response a -> msg)
     -> Decoder a
     -> Cmd msg
 put url cred body msg decoder =
     Endpoint.request
         { method = "PUT"
         , url = url
-        , expect = Http.expectJson (RemoteData.fromResult >> msg) decoder
+        , expect = expectJson msg decoder
         , headers = [ credHeader cred ]
         , body = body
         , timeout = Nothing
@@ -153,14 +213,14 @@ post :
     Endpoint
     -> Maybe Cred
     -> Body
-    -> (WebData a -> msg)
+    -> (Response a -> msg)
     -> Decoder a
     -> Cmd msg
 post url maybeCred body msg decoder =
     Endpoint.request
         { method = "POST"
         , url = url
-        , expect = Http.expectJson (RemoteData.fromResult >> msg) decoder
+        , expect = expectJson msg decoder
         , headers =
             case maybeCred of
                 Just cred ->
@@ -178,14 +238,14 @@ delete :
     Endpoint
     -> Cred
     -> Body
-    -> (WebData a -> msg)
+    -> (Response a -> msg)
     -> Decoder a
     -> Cmd msg
 delete url cred body msg decoder =
     Endpoint.request
         { method = "DELETE"
         , url = url
-        , expect = Http.expectJson (RemoteData.fromResult >> msg) decoder
+        , expect = expectJson msg decoder
         , headers = [ credHeader cred ]
         , body = body
         , timeout = Nothing
@@ -193,17 +253,14 @@ delete url cred body msg decoder =
         }
 
 
-login : Http.Body -> (WebData Viewer -> msg) -> Cmd msg
+login : Http.Body -> (Response Viewer -> msg) -> Cmd msg
 login body toMsg =
-    post Endpoint.login Nothing body toMsg (Decode.field "user" (decoderFromCred Viewer.decoder))
+    post Endpoint.login Nothing body toMsg (decoderFromCred Viewer.decoder)
 
 
 logout : Cmd msg
 logout =
-    storeCache Nothing
-
-
-port storeCache : Maybe Value -> Cmd msg
+    Viewer.storeCache Nothing
 
 
 decoderFromCred : Decoder (Cred -> a) -> Decoder a

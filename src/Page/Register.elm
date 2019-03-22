@@ -1,6 +1,7 @@
 module Page.Register exposing (Model, Msg(..), init, subscriptions, toSession, update, view)
 
 import Api
+import Api.Endpoint as Endpoint
 import Bootstrap.Button as Button
 import Bootstrap.Form as Form
 import Bootstrap.Form.Input as Input
@@ -158,7 +159,7 @@ type Msg
     | EnteredUsername String
     | EnteredEmail String
     | EnteredPassword String
-    | CompletedLogin (WebData Viewer)
+    | CompletedRegister (Api.Response ())
     | GotSession Session
     | NavbarMsg Navbar.State
 
@@ -170,7 +171,7 @@ update msg model =
             case validate model.form of
                 Ok validForm ->
                     ( { model | problems = [] }
-                    , login validForm
+                    , register validForm
                     )
 
                 Err problems ->
@@ -187,12 +188,12 @@ update msg model =
         EnteredPassword password ->
             updateForm (\form -> { form | password = password }) model
 
-        CompletedLogin (Success viewer) ->
+        CompletedRegister (Ok _) ->
             ( model
-            , Viewer.store viewer
+            , Route.replaceUrl (Session.navKey model.session) Route.RegisterTokenSend
             )
 
-        CompletedLogin _ ->
+        CompletedRegister _ ->
             ( model
             , Cmd.none
             )
@@ -291,8 +292,8 @@ trimFields form =
 -- HTTP
 
 
-login : TrimmedForm -> Cmd Msg
-login (Trimmed form) =
+register : TrimmedForm -> Cmd Msg
+register (Trimmed form) =
     let
         user =
             Encode.object
@@ -304,7 +305,7 @@ login (Trimmed form) =
             Encode.object [ ( "user", user ) ]
                 |> Http.jsonBody
     in
-    Api.login body CompletedLogin
+    Api.post Endpoint.register Nothing body CompletedRegister (Decode.succeed ())
 
 
 

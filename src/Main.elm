@@ -12,6 +12,7 @@ import Page.Blank as Blank
 import Page.Login as Login
 import Page.NotFound as NotFound
 import Page.Register as Register
+import Page.RegisterTokenSend as RegisterTokenSend
 import Page.Root as Root
 import Route exposing (Route)
 import Session exposing (Session)
@@ -25,6 +26,7 @@ type Model
     | Root Root.Model
     | Login Login.Model
     | Register Register.Model
+    | RegisterTokenSend RegisterTokenSend.Model
 
 
 
@@ -83,6 +85,10 @@ view model =
             viewPage Page.Register GotRegisterMsg (Register.view register) <|
                 Just ( register.navbarState, Register.NavbarMsg )
 
+        RegisterTokenSend register ->
+            viewPage Page.RegisterTokenSend GotRegisterTokenSendMsg (RegisterTokenSend.view register) <|
+                Just ( register.navbarState, RegisterTokenSend.NavbarMsg )
+
 
 
 -- UPDATE
@@ -96,6 +102,7 @@ type Msg
     | GotRootMsg Root.Msg
     | GotLoginMsg Login.Msg
     | GotRegisterMsg Register.Msg
+    | GotRegisterTokenSendMsg RegisterTokenSend.Msg
 
 
 toSession : Model -> Session
@@ -115,6 +122,9 @@ toSession page =
 
         Register model ->
             Register.toSession model
+
+        RegisterTokenSend model ->
+            RegisterTokenSend.toSession model
 
 
 changeRouteTo : Maybe Route -> Model -> ( Model, Cmd Msg )
@@ -139,8 +149,12 @@ changeRouteTo maybeRoute model =
             Register.init session
                 |> updateWith Register GotRegisterMsg
 
+        Just Route.RegisterTokenSend ->
+            RegisterTokenSend.init session
+                |> updateWith RegisterTokenSend GotRegisterTokenSendMsg
+
         Just Route.Logout ->
-            ( model, Cmd.none )
+            ( model, Api.logout )
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -179,6 +193,10 @@ update msg model =
             Register.update subMsg register
                 |> updateWith Register GotRegisterMsg
 
+        ( GotRegisterTokenSendMsg subMsg, RegisterTokenSend register ) ->
+            RegisterTokenSend.update subMsg register
+                |> updateWith RegisterTokenSend GotRegisterTokenSendMsg
+
         ( _, _ ) ->
             ( model, Cmd.none )
 
@@ -211,6 +229,9 @@ subscriptions model =
 
         Register register ->
             Sub.map GotRegisterMsg (Register.subscriptions register)
+
+        RegisterTokenSend register ->
+            Sub.map GotRegisterTokenSendMsg (RegisterTokenSend.subscriptions register)
 
 
 

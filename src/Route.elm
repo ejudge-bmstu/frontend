@@ -16,6 +16,7 @@ type Route
     | Login
     | Logout
     | Register
+    | RegisterTokenSend
 
 
 parser : Parser (Route -> a) a
@@ -25,6 +26,7 @@ parser =
         , Parser.map Login (Parser.s "login")
         , Parser.map Logout (Parser.s "logout")
         , Parser.map Register (Parser.s "register")
+        , Parser.map RegisterTokenSend (Parser.s "register" </> Parser.s "confirm")
         ]
 
 
@@ -67,5 +69,8 @@ routeToString page =
 
                 Register ->
                     [ "register" ]
+
+                RegisterTokenSend ->
+                    [ "register", "confirm" ]
     in
     "/" ++ String.join "/" pieces

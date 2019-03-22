@@ -25,6 +25,7 @@ type Page
     | Root
     | Login
     | Register
+    | RegisterTokenSend
 
 
 view : Maybe Viewer -> Page -> { title : String, content : Html msg } -> Navbar.State -> (Navbar.State -> msg) -> Document msg
@@ -63,6 +64,10 @@ viewViewerHeader page viewer navbarState toNavbarMsg =
             -- Add logo to your brand with a little styling to align nicely
             [ href "/" ]
             [ text " Еджудж"
+            ]
+        |> Navbar.customItems
+            [ Navbar.customItem <|
+                Button.linkButton [ Button.light, Button.attrs [ Spacing.mx2, Route.href Route.Logout ] ] [ text "Выход" ]
             ]
         |> Navbar.view navbarState
 

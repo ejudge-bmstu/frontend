@@ -7,6 +7,7 @@ import Bootstrap.Form.Input as Input
 import Bootstrap.Grid as Grid
 import Bootstrap.Grid.Col as Col
 import Bootstrap.Grid.Row as Row
+import Bootstrap.Modal as Modal
 import Bootstrap.Navbar as Navbar
 import Bootstrap.Text as Text
 import Bootstrap.Utilities.Size as Size
@@ -35,6 +36,7 @@ type alias Model =
     , problems : List Problem
     , form : Form
     , navbarState : Navbar.State
+    , errorMessage : Maybe String
     }
 
 
@@ -62,6 +64,7 @@ init session =
             , password = ""
             }
       , navbarState = navbarState
+      , errorMessage = Nothing
       }
     , navbarCmd
     )
@@ -97,22 +100,35 @@ view model =
                         ]
                     ]
                 ]
+            , showModal model.errorMessage
             ]
     }
 
 
-viewProblem : Problem -> Html msg
-viewProblem problem =
+showModal : Maybe String -> Html Msg
+showModal maybeMessage =
     let
-        errorMessage =
-            case problem of
-                InvalidEntry _ str ->
-                    str
+        ( modalVisibility, message ) =
+            case maybeMessage of
+                Just message_ ->
+                    ( Modal.shown, message_ )
 
-                ServerError str ->
-                    str
+                Nothing ->
+                    ( Modal.hidden, "" )
     in
-    li [] [ text errorMessage ]
+    Modal.config CloseModal
+        |> Modal.small
+        |> Modal.hideOnBackdropClick True
+        |> Modal.h3 [] [ text "Ошибка" ]
+        |> Modal.body [] [ p [] [ text message ] ]
+        |> Modal.footer []
+            [ Button.button
+                [ Button.outlinePrimary
+                , Button.attrs [ onClick CloseModal ]
+                ]
+                [ text "Close" ]
+            ]
+        |> Modal.view modalVisibility
 
 
 viewForm : Form -> Html Msg
@@ -149,9 +165,10 @@ type Msg
     = SubmittedForm
     | EnteredUsername String
     | EnteredPassword String
-    | CompletedLogin (WebData Viewer)
+    | CompletedLogin (Api.Response Viewer)
     | GotSession Session
     | NavbarMsg Navbar.State
+    | CloseModal
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -175,13 +192,13 @@ update msg model =
         EnteredPassword password ->
             updateForm (\form -> { form | password = password }) model
 
-        CompletedLogin (Success viewer) ->
-            ( model
-            , Viewer.store viewer
-            )
+        CompletedLogin (Ok viewer) ->
+                ( model
+                , Viewer.store viewer
+                )
 
-        CompletedLogin _ ->
-            ( model
+        CompletedLogin (Err error) ->
+            ( { model | errorMessage = Just error.message }
             , Cmd.none
             )
 
@@ -192,6 +209,9 @@ update msg model =
 
         NavbarMsg state ->
             ( { model | navbarState = state }, Cmd.none )
+
+        CloseModal ->
+            ( { model | errorMessage = Nothing }, Cmd.none )
 
 
 updateForm : (Form -> Form) -> Model -> ( Model, Cmd Msg )
@@ -281,14 +301,11 @@ trimFields form =
 login : TrimmedForm -> Cmd Msg
 login (Trimmed form) =
     let
-        user =
+        body =
             Encode.object
                 [ ( "email", Encode.string form.username )
                 , ( "password", Encode.string form.password )
                 ]
-
-        body =
-            Encode.object [ ( "user", user ) ]
                 |> Http.jsonBody
     in
     Api.login body CompletedLogin
