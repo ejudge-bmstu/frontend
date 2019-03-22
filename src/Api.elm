@@ -193,9 +193,9 @@ delete url cred body msg decoder =
         }
 
 
-login : Http.Body -> (WebData a -> msg) -> Decoder (Cred -> a) -> Cmd msg
-login body toMsg decoder =
-    post Endpoint.login Nothing body toMsg (Decode.field "user" (decoderFromCred decoder))
+login : Http.Body -> (WebData Viewer -> msg) -> Cmd msg
+login body toMsg =
+    post Endpoint.login Nothing body toMsg (Decode.field "user" (decoderFromCred Viewer.decoder))
 
 
 logout : Cmd msg

@@ -12,7 +12,6 @@ import Bootstrap.Grid.Col as Col
 import Bootstrap.Grid.Row as Row
 import Browser.Navigation as Nav
 import Cred exposing (Cred)
-import Debug
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
@@ -53,8 +52,8 @@ init session =
     ( { session = session
       , problems = []
       , form =
-            { email = "435"
-            , password = "435"
+            { email = ""
+            , password = ""
             }
       }
     , Cmd.none
@@ -171,16 +170,14 @@ update msg model =
             updateForm (\form -> { form | password = password }) model
 
         CompletedLogin (Success viewer) ->
-            Debug.log (Debug.toString viewer) <|
-                ( model
-                , Viewer.store viewer
-                )
+            ( model
+            , Viewer.store viewer
+            )
 
         CompletedLogin _ ->
-            Debug.log ":(" <|
-                ( model
-                , Cmd.none
-                )
+            ( model
+            , Cmd.none
+            )
 
         GotSession session ->
             ( { model | session = session }
@@ -188,9 +185,6 @@ update msg model =
             )
 
 
-{-| Helper function for `update`. Updates the form and returns Cmd.none.
-Useful for recording form fields!
--}
 updateForm : (Form -> Form) -> Model -> ( Model, Cmd Msg )
 updateForm transform model =
     ( { model | form = transform model.form }, Cmd.none )
@@ -202,7 +196,6 @@ updateForm transform model =
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-    --Sub.none
     Session.changes GotSession (Session.navKey model.session)
 
 
@@ -210,15 +203,10 @@ subscriptions model =
 -- FORM
 
 
-{-| Marks that we've trimmed the form's fields, so we don't accidentally send
-it to the server without having trimmed it!
--}
 type TrimmedForm
     = Trimmed Form
 
 
-{-| When adding a variant here, add it to `fieldsToValidate` too!
--}
 type ValidatedField
     = Email
     | Password

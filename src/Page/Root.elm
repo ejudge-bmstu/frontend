@@ -1,6 +1,7 @@
 module Page.Root exposing (Model, Msg, init, subscriptions, toSession, update, view)
 
 import Html exposing (Html)
+import Route
 import Session exposing (Session)
 
 
@@ -9,7 +10,7 @@ type alias Model =
 
 
 type Msg
-    = None
+    = GotSession Session
 
 
 init : Session -> ( Model, Cmd Msg )
@@ -25,13 +26,17 @@ view _ =
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
-update _ model =
-    ( model, Cmd.none )
+update msg model =
+    case msg of
+        GotSession session ->
+            ( session
+            , Route.replaceUrl (Session.navKey session) Route.Root
+            )
 
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-    Sub.none
+    Session.changes GotSession (Session.navKey model)
 
 
 toSession : Model -> Session
