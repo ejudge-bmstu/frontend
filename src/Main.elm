@@ -12,7 +12,8 @@ import Page.Blank as Blank
 import Page.Login as Login
 import Page.NotFound as NotFound
 import Page.Register as Register
-import Page.RegisterTokenSend as RegisterTokenSend
+import Page.RegisterConfirm as RegisterConfirm
+import Page.RegisterContinue as RegisterContinue
 import Page.Root as Root
 import Route exposing (Route)
 import Session exposing (Session)
@@ -26,7 +27,8 @@ type Model
     | Root Root.Model
     | Login Login.Model
     | Register Register.Model
-    | RegisterTokenSend RegisterTokenSend.Model
+    | RegisterContinue RegisterContinue.Model
+    | RegisterConfirm RegisterConfirm.Model
 
 
 
@@ -85,9 +87,13 @@ view model =
             viewPage Page.Register GotRegisterMsg (Register.view register) <|
                 Just ( register.navbarState, Register.NavbarMsg )
 
-        RegisterTokenSend register ->
-            viewPage Page.RegisterTokenSend GotRegisterTokenSendMsg (RegisterTokenSend.view register) <|
-                Just ( register.navbarState, RegisterTokenSend.NavbarMsg )
+        RegisterContinue register ->
+            viewPage Page.RegisterContinue GotRegisterContinueMsg (RegisterContinue.view register) <|
+                Just ( register.navbarState, RegisterContinue.NavbarMsg )
+
+        RegisterConfirm register ->
+            viewPage Page.RegisterConfirm GotRegisterConfirmMsg (RegisterConfirm.view register) <|
+                Just ( register.navbarState, RegisterConfirm.NavbarMsg )
 
 
 
@@ -102,7 +108,8 @@ type Msg
     | GotRootMsg Root.Msg
     | GotLoginMsg Login.Msg
     | GotRegisterMsg Register.Msg
-    | GotRegisterTokenSendMsg RegisterTokenSend.Msg
+    | GotRegisterContinueMsg RegisterContinue.Msg
+    | GotRegisterConfirmMsg RegisterConfirm.Msg
 
 
 toSession : Model -> Session
@@ -123,8 +130,11 @@ toSession page =
         Register model ->
             Register.toSession model
 
-        RegisterTokenSend model ->
-            RegisterTokenSend.toSession model
+        RegisterContinue model ->
+            RegisterContinue.toSession model
+
+        RegisterConfirm model ->
+            RegisterConfirm.toSession model
 
 
 changeRouteTo : Maybe Route -> Model -> ( Model, Cmd Msg )
@@ -149,9 +159,13 @@ changeRouteTo maybeRoute model =
             Register.init session
                 |> updateWith Register GotRegisterMsg
 
-        Just Route.RegisterTokenSend ->
-            RegisterTokenSend.init session
-                |> updateWith RegisterTokenSend GotRegisterTokenSendMsg
+        Just Route.RegisterContinue ->
+            RegisterContinue.init session
+                |> updateWith RegisterContinue GotRegisterContinueMsg
+
+        Just (Route.RegisterConfirm token) ->
+            RegisterConfirm.init session token
+                |> updateWith RegisterConfirm GotRegisterConfirmMsg
 
         Just Route.Logout ->
             ( model, Api.logout )
@@ -193,9 +207,9 @@ update msg model =
             Register.update subMsg register
                 |> updateWith Register GotRegisterMsg
 
-        ( GotRegisterTokenSendMsg subMsg, RegisterTokenSend register ) ->
-            RegisterTokenSend.update subMsg register
-                |> updateWith RegisterTokenSend GotRegisterTokenSendMsg
+        ( GotRegisterContinueMsg subMsg, RegisterContinue register ) ->
+            RegisterContinue.update subMsg register
+                |> updateWith RegisterContinue GotRegisterContinueMsg
 
         ( _, _ ) ->
             ( model, Cmd.none )
@@ -230,8 +244,11 @@ subscriptions model =
         Register register ->
             Sub.map GotRegisterMsg (Register.subscriptions register)
 
-        RegisterTokenSend register ->
-            Sub.map GotRegisterTokenSendMsg (RegisterTokenSend.subscriptions register)
+        RegisterContinue register ->
+            Sub.map GotRegisterContinueMsg (RegisterContinue.subscriptions register)
+
+        RegisterConfirm register ->
+            Sub.map GotRegisterConfirmMsg (RegisterConfirm.subscriptions register)
 
 
 

@@ -2,21 +2,16 @@ module Page exposing (Page(..), view, viewWithoutHeader)
 
 import Api
 import Bootstrap.Button as Button
-import Bootstrap.CDN as CDN
 import Bootstrap.Form as Form
-import Bootstrap.Form.Input as Input
-import Bootstrap.Form.InputGroup as InputGroup
 import Bootstrap.Grid as Grid
 import Bootstrap.Navbar as Navbar
-import Bootstrap.Utilities.Size as Size
 import Bootstrap.Utilities.Spacing as Spacing
 import Browser exposing (Document)
 import Cred exposing (Cred)
-import Html exposing (Html, a, button, div, footer, form, i, img, input, li, nav, p, span, text, ul)
-import Html.Attributes exposing (attribute, class, classList, href, id, placeholder, src, style, type_)
-import Html.Events exposing (onClick, onSubmit)
+import Html exposing (..)
+import Html.Attributes exposing (..)
+import Html.Events exposing (..)
 import Route exposing (Route)
-import Session exposing (Session)
 import Viewer exposing (Viewer)
 
 
@@ -25,7 +20,8 @@ type Page
     | Root
     | Login
     | Register
-    | RegisterTokenSend
+    | RegisterContinue
+    | RegisterConfirm
 
 
 view : Maybe Viewer -> Page -> { title : String, content : Html msg } -> Navbar.State -> (Navbar.State -> msg) -> Document msg

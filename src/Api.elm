@@ -4,11 +4,8 @@ import Api.Endpoint as Endpoint exposing (Endpoint)
 import Browser
 import Browser.Navigation as Nav
 import Cred exposing (Cred(..))
-import Debug
 import Http exposing (Body, Expect)
 import Json.Decode as Decode exposing (Decoder, Value, decodeString, field, string)
-import Json.Decode.Pipeline as Pipeline exposing (optional, required)
-import Json.Encode as Encode
 import Maybe
 import Role exposing (Role)
 import Tokens exposing (Tokens)
@@ -71,7 +68,6 @@ decodeFromChange val =
 
 
 
--- SERIALIZATION
 -- APPLICATION
 
 

@@ -11,17 +11,12 @@ import Bootstrap.Modal as Modal
 import Bootstrap.Navbar as Navbar
 import Bootstrap.Text as Text
 import Bootstrap.Utilities.Size as Size
-import Bootstrap.Utilities.Spacing as Spacing
 import Browser.Navigation as Nav
-import Cred exposing (Cred)
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
 import Http
-import Json.Decode as Decode exposing (Decoder, decodeString, field, string)
-import Json.Decode.Pipeline exposing (optional)
 import Json.Encode as Encode
-import RemoteData exposing (RemoteData(..), WebData)
 import Route exposing (Route)
 import Session exposing (Session)
 import Viewer exposing (Viewer)
@@ -193,9 +188,9 @@ update msg model =
             updateForm (\form -> { form | password = password }) model
 
         CompletedLogin (Ok viewer) ->
-                ( model
-                , Viewer.store viewer
-                )
+            ( model
+            , Viewer.store viewer
+            )
 
         CompletedLogin (Err error) ->
             ( { model | errorMessage = Just error.message }

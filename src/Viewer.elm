@@ -1,14 +1,7 @@
 port module Viewer exposing (Viewer(..), cred, decoder, store, storeCache)
 
-{-| The logged-in user currently viewing this page. It stores enough data to
-be able to render the menu bar (username and avatar), along with Cred so it's
-impossible to have a Viewer if you aren't logged in.
--}
-
 import Cred exposing (Cred(..))
-import Debug exposing (..)
 import Json.Decode as Decode exposing (Decoder)
-import Json.Decode.Pipeline exposing (custom, required)
 import Json.Encode as Encode exposing (Value)
 import Role exposing (Role)
 import Tokens

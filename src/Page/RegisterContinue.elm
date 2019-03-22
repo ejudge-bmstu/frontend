@@ -1,4 +1,4 @@
-module Page.RegisterTokenSend exposing (Model, Msg(..), init, subscriptions, toSession, update, view)
+module Page.RegisterContinue exposing (Model, Msg(..), init, subscriptions, toSession, update, view)
 
 import Api
 import Bootstrap.Button as Button
@@ -10,15 +10,12 @@ import Bootstrap.Grid.Row as Row
 import Bootstrap.Navbar as Navbar
 import Bootstrap.Text as Text
 import Bootstrap.Utilities.Size as Size
-import Bootstrap.Utilities.Spacing as Spacing
 import Browser.Navigation as Nav
-import Cred exposing (Cred)
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
 import Http
-import Json.Decode as Decode exposing (Decoder, decodeString, field, string)
-import Json.Decode.Pipeline exposing (optional)
+import Json.Decode as Decode exposing (field)
 import Json.Encode as Encode
 import RemoteData exposing (RemoteData(..), WebData)
 import Route exposing (Route)
