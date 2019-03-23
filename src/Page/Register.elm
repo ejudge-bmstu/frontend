@@ -36,7 +36,6 @@ type alias Model =
     , errorMessage : String
     , errorModalVisibility : Modal.Visibility
     , okModalVisibility : Modal.Visibility
-    , token : Maybe String
     }
 
 
@@ -52,8 +51,8 @@ type alias Form =
     }
 
 
-init : Session -> Maybe String -> ( Model, Cmd Msg )
-init session token =
+init : Session -> ( Model, Cmd Msg )
+init session =
     let
         ( navbarState, navbarCmd ) =
             Navbar.initialState NavbarMsg
@@ -69,7 +68,6 @@ init session token =
       , errorMessage = ""
       , errorModalVisibility = Modal.hidden
       , okModalVisibility = Modal.hidden
-      , token = token
       }
     , navbarCmd
     )
@@ -82,17 +80,7 @@ init session token =
 view : Model -> { title : String, content : Html Msg }
 view model =
     { title = "Регистрация"
-    , content =
-        case model.token of
-            Just token ->
-                mkModal
-                    Modal.shown
-                    "Регистрация прошла успешно"
-                    "Учетная запись подтверждена, можете войти используя введенные данные."
-                    CloseOkModal
-
-            Nothing ->
-                viewProcess model
+    , content = viewProcess model
     }
 
 
