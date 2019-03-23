@@ -298,7 +298,7 @@ login (Trimmed form) =
     let
         body =
             Encode.object
-                [ ( "email", Encode.string form.username )
+                [ ( "username", Encode.string form.username )
                 , ( "password", Encode.string form.password )
                 ]
                 |> Http.jsonBody

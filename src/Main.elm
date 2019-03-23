@@ -211,6 +211,10 @@ update msg model =
             RegisterContinue.update subMsg register
                 |> updateWith RegisterContinue GotRegisterContinueMsg
 
+        ( GotRegisterConfirmMsg subMsg, RegisterConfirm register ) ->
+            RegisterConfirm.update subMsg register
+                |> updateWith RegisterConfirm GotRegisterConfirmMsg
+
         ( _, _ ) ->
             ( model, Cmd.none )
 

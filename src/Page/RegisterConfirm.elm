@@ -13,6 +13,7 @@ import Bootstrap.Text as Text
 import Bootstrap.Utilities.Size as Size
 import Bootstrap.Utilities.Spacing as Spacing
 import Browser.Navigation as Nav
+import Debug
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
@@ -75,10 +76,12 @@ update msg model =
             ( { model | navbarState = state }, Cmd.none )
 
         CompletedRegister (Ok _) ->
-            ( { model | message = "Учетная запись подтверждена, можете войти используя свои введенные данные." }, Cmd.none )
+            Debug.log "11"
+                ( { model | message = "Учетная запись подтверждена, можете войти используя свои введенные данные." }, Cmd.none )
 
         CompletedRegister (Err error) ->
-            ( { model | message = error.message }, Cmd.none )
+            Debug.log "22"
+                ( { model | message = error.message }, Cmd.none )
 
 
 registerComplete : String -> Cmd Msg

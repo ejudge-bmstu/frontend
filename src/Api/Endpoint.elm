@@ -64,4 +64,4 @@ register =
 
 registerComplete : Endpoint
 registerComplete =
-    url [ "register", "complete" ] []
+    url [ "register", "confirm" ] []
