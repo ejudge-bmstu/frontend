@@ -1,4 +1,4 @@
-port module Api exposing (Response, application, delete, get, login, logout, post, put, username, viewerChanges)
+port module Api exposing (Response, application, delete, get, login, logout, post, postExpectEmpty, put, username, viewerChanges)
 
 import Api.Endpoint as Endpoint exposing (Endpoint)
 import Browser
@@ -199,6 +199,35 @@ put url cred body msg decoder =
         , url = url
         , expect = expectJson msg decoder
         , headers = [ credHeader cred ]
+        , body = body
+        , timeout = Nothing
+        , tracker = Nothing
+        }
+
+
+ignoreResponseBody : (Response () -> msg) -> Expect msg
+ignoreResponseBody toMsg =
+    Http.expectStringResponse toMsg (\_ -> Ok ())
+
+
+postExpectEmpty :
+    Endpoint
+    -> Maybe Cred
+    -> Body
+    -> (Response () -> msg)
+    -> Cmd msg
+postExpectEmpty url maybeCred body msg =
+    Endpoint.request
+        { method = "POST"
+        , url = url
+        , expect = ignoreResponseBody msg
+        , headers =
+            case maybeCred of
+                Just cred ->
+                    [ credHeader cred ]
+
+                Nothing ->
+                    []
         , body = body
         , timeout = Nothing
         , tracker = Nothing

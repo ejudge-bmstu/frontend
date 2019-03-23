@@ -88,7 +88,7 @@ view model =
                             ]
                             [ h1 [] [ text "Вход" ]
                             , Button.linkButton
-                                [ Button.attrs [ Route.href Route.Register ] ]
+                                [ Button.attrs [ Route.href (Route.Register Nothing) ] ]
                                 [ text <| "Нет аккаунта?" ]
                             , viewForm model.form
                             ]
@@ -121,7 +121,7 @@ showModal maybeMessage =
                 [ Button.outlinePrimary
                 , Button.attrs [ onClick CloseModal ]
                 ]
-                [ text "Close" ]
+                [ text "Закрыть" ]
             ]
         |> Modal.view modalVisibility
 
@@ -137,12 +137,14 @@ viewForm form =
                 [ Input.id "myusername_auth"
                 , Input.placeholder "Логин"
                 , Input.onInput EnteredUsername
+                , Input.attrs [ minlength 6 ]
                 , Input.value form.username
                 ]
             , Input.password
                 [ Input.id "mypwd_auth"
                 , Input.onInput EnteredPassword
                 , Input.placeholder "Пароль"
+                , Input.attrs [ minlength 6 ]
                 , Input.value form.password
                 ]
             ]

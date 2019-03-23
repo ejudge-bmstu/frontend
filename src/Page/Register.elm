@@ -33,7 +33,10 @@ type alias Model =
     , problems : List Problem
     , form : Form
     , navbarState : Navbar.State
-    , errorMessage : Maybe String
+    , errorMessage : String
+    , errorModalVisibility : Modal.Visibility
+    , okModalVisibility : Modal.Visibility
+    , token : Maybe String
     }
 
 
@@ -49,8 +52,8 @@ type alias Form =
     }
 
 
-init : Session -> ( Model, Cmd Msg )
-init session =
+init : Session -> Maybe String -> ( Model, Cmd Msg )
+init session token =
     let
         ( navbarState, navbarCmd ) =
             Navbar.initialState NavbarMsg
@@ -63,7 +66,10 @@ init session =
             , password = ""
             }
       , navbarState = navbarState
-      , errorMessage = Nothing
+      , errorMessage = ""
+      , errorModalVisibility = Modal.hidden
+      , okModalVisibility = Modal.hidden
+      , token = token
       }
     , navbarCmd
     )
@@ -77,57 +83,81 @@ view : Model -> { title : String, content : Html Msg }
 view model =
     { title = "Регистрация"
     , content =
-        div [ class "vertical-center-wrapper" ]
-            [ div [ class "vertical-center" ]
-                [ Grid.container
-                    [ class "signin-page" ]
-                    [ Grid.row
-                        [ Row.middleXs
-                        , Row.centerXs
-                        , Row.attrs []
-                        ]
-                        [ Grid.col
-                            [ Col.lg4
-                            , Col.textAlign Text.alignMdCenter
-                            ]
-                            [ h1 [] [ text "Регистрация" ]
-                            , Button.linkButton
-                                [ Button.attrs [ Route.href Route.Login ] ]
-                                [ text <| "Есть аккаунт?" ]
-                            , viewForm model.form
-                            ]
-                        ]
-                    ]
-                ]
-            , showModal model.errorMessage
-            ]
+        case model.token of
+            Just token ->
+                mkModal
+                    Modal.shown
+                    "Регистрация прошла успешно"
+                    "Учетная запись подтверждена, можете войти используя введенные данные."
+                    CloseOkModal
+
+            Nothing ->
+                viewProcess model
     }
 
 
-showModal : Maybe String -> Html Msg
-showModal maybeMessage =
-    let
-        ( modalVisibility, message ) =
-            case maybeMessage of
-                Just message_ ->
-                    ( Modal.shown, message_ )
+viewProcess : Model -> Html Msg
+viewProcess model =
+    div [ class "vertical-center-wrapper" ]
+        [ div [ class "vertical-center" ]
+            [ Grid.container
+                [ class "signin-page" ]
+                [ Grid.row
+                    [ Row.middleXs
+                    , Row.centerXs
+                    , Row.attrs []
+                    ]
+                    [ Grid.col
+                        [ Col.lg4
+                        , Col.textAlign Text.alignMdCenter
+                        ]
+                        [ h1 [] [ text "Регистрация" ]
+                        , Button.linkButton
+                            [ Button.attrs [ Route.href Route.Login ] ]
+                            [ text <| "Есть аккаунт?" ]
+                        , viewForm model.form
+                        ]
+                    ]
+                ]
+            ]
+        , showErrorModal model
+        , showOkModal model
+        ]
 
-                Nothing ->
-                    ( Modal.hidden, "" )
-    in
-    Modal.config CloseModal
+
+showErrorModal : Model -> Html Msg
+showErrorModal model =
+    mkModal
+        model.errorModalVisibility
+        "Ошибка"
+        model.errorMessage
+        CloseErrorModal
+
+
+showOkModal : Model -> Html Msg
+showOkModal model =
+    mkModal
+        model.okModalVisibility
+        "Подтверждение регистрации"
+        "На указанный вами email выслано подтверждение."
+        CloseOkModal
+
+
+mkModal : Modal.Visibility -> String -> String -> Msg -> Html Msg
+mkModal visibility header message msg =
+    Modal.config msg
         |> Modal.small
         |> Modal.hideOnBackdropClick True
-        |> Modal.h3 [] [ text "Ошибка" ]
+        |> Modal.h3 [] [ text header ]
         |> Modal.body [] [ p [] [ text message ] ]
         |> Modal.footer []
             [ Button.button
                 [ Button.outlinePrimary
-                , Button.attrs [ onClick CloseModal ]
+                , Button.attrs [ onClick msg ]
                 ]
-                [ text "Close" ]
+                [ text "Закрыть" ]
             ]
-        |> Modal.view modalVisibility
+        |> Modal.view visibility
 
 
 viewForm : Form -> Html Msg
@@ -141,6 +171,7 @@ viewForm form =
                 [ Input.id "myusername_auth"
                 , Input.placeholder "Логин"
                 , Input.onInput EnteredUsername
+                , Input.attrs [ minlength 6 ]
                 , Input.value form.username
                 ]
             , Input.email
@@ -153,6 +184,7 @@ viewForm form =
                 [ Input.id "mypwd_auth"
                 , Input.onInput EnteredPassword
                 , Input.placeholder "Пароль"
+                , Input.attrs [ minlength 6 ]
                 , Input.value form.password
                 ]
             ]
@@ -174,7 +206,8 @@ type Msg
     | CompletedRegister (Api.Response ())
     | GotSession Session
     | NavbarMsg Navbar.State
-    | CloseModal
+    | CloseErrorModal
+    | CloseOkModal
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -202,12 +235,12 @@ update msg model =
             updateForm (\form -> { form | password = password }) model
 
         CompletedRegister (Ok _) ->
-            ( model
-            , Route.replaceUrl (Session.navKey model.session) Route.RegisterContinue
+            ( { model | okModalVisibility = Modal.shown }
+            , Cmd.none
             )
 
         CompletedRegister (Err error) ->
-            ( { model | errorMessage = Just error.message }
+            ( { model | errorMessage = error.message, errorModalVisibility = Modal.shown }
             , Cmd.none
             )
 
@@ -219,8 +252,13 @@ update msg model =
         NavbarMsg state ->
             ( { model | navbarState = state }, Cmd.none )
 
-        CloseModal ->
-            ( { model | errorMessage = Nothing }, Cmd.none )
+        CloseErrorModal ->
+            ( { model | errorModalVisibility = Modal.hidden }, Cmd.none )
+
+        CloseOkModal ->
+            ( { model | okModalVisibility = Modal.hidden }
+            , Route.replaceUrl (Session.navKey model.session) Route.Root
+            )
 
 
 updateForm : (Form -> Form) -> Model -> ( Model, Cmd Msg )
@@ -319,7 +357,7 @@ register (Trimmed form) =
                 ]
                 |> Http.jsonBody
     in
-    Api.post Endpoint.register Nothing body CompletedRegister (Decode.succeed ())
+    Api.postExpectEmpty Endpoint.register Nothing body CompletedRegister
 
 
 
