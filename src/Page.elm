@@ -20,6 +20,7 @@ type Page
     | Root
     | Login
     | Register
+    | RegisterConfirm
 
 
 view : Maybe Viewer -> Page -> { title : String, content : Html msg } -> Navbar.State -> (Navbar.State -> msg) -> Document msg
@@ -82,7 +83,7 @@ viewGuestHeader page navbarState toNavbarMsg =
             ]
         |> Navbar.customItems
             [ Navbar.customItem <|
-                Button.linkButton [ Button.light, Button.attrs [ Spacing.mx2, Route.href (Route.Register Nothing) ] ] [ text "Регистрация" ]
+                Button.linkButton [ Button.light, Button.attrs [ Spacing.mx2, Route.href Route.Register ] ] [ text "Регистрация" ]
             , Navbar.customItem <|
                 Button.linkButton [ Button.outlineLight, Button.attrs [ Spacing.mx2, Route.href Route.Login ] ] [ text "Вход" ]
             ]

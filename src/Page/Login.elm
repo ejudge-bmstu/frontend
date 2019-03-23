@@ -88,7 +88,7 @@ view model =
                             ]
                             [ h1 [] [ text "Вход" ]
                             , Button.linkButton
-                                [ Button.attrs [ Route.href (Route.Register Nothing) ] ]
+                                [ Button.attrs [ Route.href Route.Register ] ]
                                 [ text <| "Нет аккаунта?" ]
                             , viewForm model.form
                             ]
