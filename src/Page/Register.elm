@@ -311,14 +311,12 @@ trimFields form =
 register : TrimmedForm -> Cmd Msg
 register (Trimmed form) =
     let
-        user =
+        body =
             Encode.object
-                [ ( "email", Encode.string form.email )
+                [ ( "username", Encode.string form.username )
+                , ( "email", Encode.string form.email )
                 , ( "password", Encode.string form.password )
                 ]
-
-        body =
-            Encode.object [ ( "user", user ) ]
                 |> Http.jsonBody
     in
     Api.post Endpoint.register Nothing body CompletedRegister (Decode.succeed ())
