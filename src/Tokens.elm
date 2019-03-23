@@ -34,20 +34,17 @@ encodeRefreshToken (RefreshToken at) =
 
 type alias Tokens =
     { accessToken : String
-    , refreshToken : String
     }
 
 
 decoder : Decoder Tokens
 decoder =
-    Decode.map2 Tokens
+    Decode.map Tokens
         (Decode.field "access_token" Decode.string)
-        (Decode.field "refresh_token" Decode.string)
 
 
 encode : Tokens -> Value
 encode tokens =
     Encode.object
         [ ( "access_token", Encode.string tokens.accessToken )
-        , ( "refresh_token", Encode.string tokens.refreshToken )
         ]

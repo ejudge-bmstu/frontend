@@ -1,26 +1,24 @@
 module Page.Register exposing (Model, Msg(..), init, subscriptions, toSession, update, view)
 
 import Api
+import Api.Endpoint as Endpoint
 import Bootstrap.Button as Button
 import Bootstrap.Form as Form
 import Bootstrap.Form.Input as Input
 import Bootstrap.Grid as Grid
 import Bootstrap.Grid.Col as Col
 import Bootstrap.Grid.Row as Row
+import Bootstrap.Modal as Modal
 import Bootstrap.Navbar as Navbar
 import Bootstrap.Text as Text
 import Bootstrap.Utilities.Size as Size
-import Bootstrap.Utilities.Spacing as Spacing
 import Browser.Navigation as Nav
-import Cred exposing (Cred)
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
 import Http
-import Json.Decode as Decode exposing (Decoder, decodeString, field, string)
-import Json.Decode.Pipeline exposing (optional)
+import Json.Decode as Decode exposing (field)
 import Json.Encode as Encode
-import RemoteData exposing (RemoteData(..), WebData)
 import Route exposing (Route)
 import Session exposing (Session)
 import Viewer exposing (Viewer)
@@ -35,6 +33,7 @@ type alias Model =
     , problems : List Problem
     , form : Form
     , navbarState : Navbar.State
+    , errorMessage : Maybe String
     }
 
 
@@ -64,6 +63,7 @@ init session =
             , password = ""
             }
       , navbarState = navbarState
+      , errorMessage = Nothing
       }
     , navbarCmd
     )
@@ -99,22 +99,35 @@ view model =
                         ]
                     ]
                 ]
+            , showModal model.errorMessage
             ]
     }
 
 
-viewProblem : Problem -> Html msg
-viewProblem problem =
+showModal : Maybe String -> Html Msg
+showModal maybeMessage =
     let
-        errorMessage =
-            case problem of
-                InvalidEntry _ str ->
-                    str
+        ( modalVisibility, message ) =
+            case maybeMessage of
+                Just message_ ->
+                    ( Modal.shown, message_ )
 
-                ServerError str ->
-                    str
+                Nothing ->
+                    ( Modal.hidden, "" )
     in
-    li [] [ text errorMessage ]
+    Modal.config CloseModal
+        |> Modal.small
+        |> Modal.hideOnBackdropClick True
+        |> Modal.h3 [] [ text "Ошибка" ]
+        |> Modal.body [] [ p [] [ text message ] ]
+        |> Modal.footer []
+            [ Button.button
+                [ Button.outlinePrimary
+                , Button.attrs [ onClick CloseModal ]
+                ]
+                [ text "Close" ]
+            ]
+        |> Modal.view modalVisibility
 
 
 viewForm : Form -> Html Msg
@@ -158,9 +171,10 @@ type Msg
     | EnteredUsername String
     | EnteredEmail String
     | EnteredPassword String
-    | CompletedLogin (WebData Viewer)
+    | CompletedRegister (Api.Response ())
     | GotSession Session
     | NavbarMsg Navbar.State
+    | CloseModal
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -170,7 +184,7 @@ update msg model =
             case validate model.form of
                 Ok validForm ->
                     ( { model | problems = [] }
-                    , login validForm
+                    , register validForm
                     )
 
                 Err problems ->
@@ -187,13 +201,13 @@ update msg model =
         EnteredPassword password ->
             updateForm (\form -> { form | password = password }) model
 
-        CompletedLogin (Success viewer) ->
+        CompletedRegister (Ok _) ->
             ( model
-            , Viewer.store viewer
+            , Route.replaceUrl (Session.navKey model.session) Route.RegisterContinue
             )
 
-        CompletedLogin _ ->
-            ( model
+        CompletedRegister (Err error) ->
+            ( { model | errorMessage = Just error.message }
             , Cmd.none
             )
 
@@ -204,6 +218,9 @@ update msg model =
 
         NavbarMsg state ->
             ( { model | navbarState = state }, Cmd.none )
+
+        CloseModal ->
+            ( { model | errorMessage = Nothing }, Cmd.none )
 
 
 updateForm : (Form -> Form) -> Model -> ( Model, Cmd Msg )
@@ -291,8 +308,8 @@ trimFields form =
 -- HTTP
 
 
-login : TrimmedForm -> Cmd Msg
-login (Trimmed form) =
+register : TrimmedForm -> Cmd Msg
+register (Trimmed form) =
     let
         user =
             Encode.object
@@ -304,7 +321,7 @@ login (Trimmed form) =
             Encode.object [ ( "user", user ) ]
                 |> Http.jsonBody
     in
-    Api.login body CompletedLogin
+    Api.post Endpoint.register Nothing body CompletedRegister (Decode.succeed ())
 
 
 

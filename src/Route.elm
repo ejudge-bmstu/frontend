@@ -4,7 +4,8 @@ import Browser.Navigation as Nav
 import Html exposing (Attribute)
 import Html.Attributes as Attr
 import Url exposing (Url)
-import Url.Parser as Parser exposing ((</>), Parser, oneOf, s, string)
+import Url.Parser as Parser exposing ((</>), (<?>), Parser, oneOf, query, s, string)
+import Url.Parser.Query as Query
 
 
 
@@ -16,6 +17,8 @@ type Route
     | Login
     | Logout
     | Register
+    | RegisterContinue
+    | RegisterConfirm (Maybe String)
 
 
 parser : Parser (Route -> a) a
@@ -25,6 +28,8 @@ parser =
         , Parser.map Login (Parser.s "login")
         , Parser.map Logout (Parser.s "logout")
         , Parser.map Register (Parser.s "register")
+        , Parser.map RegisterContinue (Parser.s "register" </> Parser.s "continue")
+        , Parser.map RegisterConfirm (Parser.s "register" </> Parser.s "confirm" <?> Query.string "token")
         ]
 
 
@@ -67,5 +72,11 @@ routeToString page =
 
                 Register ->
                     [ "register" ]
+
+                RegisterContinue ->
+                    [ "register", "continue" ]
+
+                RegisterConfirm _ ->
+                    [ "register", "confirm" ]
     in
     "/" ++ String.join "/" pieces

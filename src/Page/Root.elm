@@ -1,6 +1,7 @@
 module Page.Root exposing (Model, Msg(..), init, subscriptions, toSession, update, view)
 
 import Bootstrap.Navbar as Navbar
+import Debug
 import Html exposing (Html)
 import Route
 import Session exposing (Session)
@@ -37,9 +38,9 @@ update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         GotSession session ->
-            ( { model | session = session }
-            , Route.replaceUrl (Session.navKey session) Route.Root
-            )
+                ( { model | session = session }
+                , Route.replaceUrl (Session.navKey session) Route.Root
+                )
 
         NavbarMsg state ->
             ( { model | navbarState = state }, Cmd.none )
