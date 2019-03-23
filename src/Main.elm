@@ -12,8 +12,6 @@ import Page.Blank as Blank
 import Page.Login as Login
 import Page.NotFound as NotFound
 import Page.Register as Register
-import Page.RegisterConfirm as RegisterConfirm
-import Page.RegisterContinue as RegisterContinue
 import Page.Root as Root
 import Route exposing (Route)
 import Session exposing (Session)
@@ -27,8 +25,6 @@ type Model
     | Root Root.Model
     | Login Login.Model
     | Register Register.Model
-    | RegisterContinue RegisterContinue.Model
-    | RegisterConfirm RegisterConfirm.Model
 
 
 
@@ -87,14 +83,6 @@ view model =
             viewPage Page.Register GotRegisterMsg (Register.view register) <|
                 Just ( register.navbarState, Register.NavbarMsg )
 
-        RegisterContinue register ->
-            viewPage Page.RegisterContinue GotRegisterContinueMsg (RegisterContinue.view register) <|
-                Just ( register.navbarState, RegisterContinue.NavbarMsg )
-
-        RegisterConfirm register ->
-            viewPage Page.RegisterConfirm GotRegisterConfirmMsg (RegisterConfirm.view register) <|
-                Just ( register.navbarState, RegisterConfirm.NavbarMsg )
-
 
 
 -- UPDATE
@@ -108,8 +96,6 @@ type Msg
     | GotRootMsg Root.Msg
     | GotLoginMsg Login.Msg
     | GotRegisterMsg Register.Msg
-    | GotRegisterContinueMsg RegisterContinue.Msg
-    | GotRegisterConfirmMsg RegisterConfirm.Msg
 
 
 toSession : Model -> Session
@@ -130,12 +116,6 @@ toSession page =
         Register model ->
             Register.toSession model
 
-        RegisterContinue model ->
-            RegisterContinue.toSession model
-
-        RegisterConfirm model ->
-            RegisterConfirm.toSession model
-
 
 changeRouteTo : Maybe Route -> Model -> ( Model, Cmd Msg )
 changeRouteTo maybeRoute model =
@@ -155,17 +135,9 @@ changeRouteTo maybeRoute model =
             Login.init session
                 |> updateWith Login GotLoginMsg
 
-        Just Route.Register ->
-            Register.init session
+        Just (Route.Register token) ->
+            Register.init session token
                 |> updateWith Register GotRegisterMsg
-
-        Just Route.RegisterContinue ->
-            RegisterContinue.init session
-                |> updateWith RegisterContinue GotRegisterContinueMsg
-
-        Just (Route.RegisterConfirm token) ->
-            RegisterConfirm.init session token
-                |> updateWith RegisterConfirm GotRegisterConfirmMsg
 
         Just Route.Logout ->
             ( model, Api.logout )
@@ -207,14 +179,6 @@ update msg model =
             Register.update subMsg register
                 |> updateWith Register GotRegisterMsg
 
-        ( GotRegisterContinueMsg subMsg, RegisterContinue register ) ->
-            RegisterContinue.update subMsg register
-                |> updateWith RegisterContinue GotRegisterContinueMsg
-
-        ( GotRegisterConfirmMsg subMsg, RegisterConfirm register ) ->
-            RegisterConfirm.update subMsg register
-                |> updateWith RegisterConfirm GotRegisterConfirmMsg
-
         ( _, _ ) ->
             ( model, Cmd.none )
 
@@ -247,12 +211,6 @@ subscriptions model =
 
         Register register ->
             Sub.map GotRegisterMsg (Register.subscriptions register)
-
-        RegisterContinue register ->
-            Sub.map GotRegisterContinueMsg (RegisterContinue.subscriptions register)
-
-        RegisterConfirm register ->
-            Sub.map GotRegisterConfirmMsg (RegisterConfirm.subscriptions register)
 
 
 
