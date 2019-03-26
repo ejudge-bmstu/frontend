@@ -28,16 +28,9 @@ import Viewer exposing (Viewer)
 
 type alias Model =
     { session : Session
-    , problems : List Problem
     , form : Form
-    , navbarState : Navbar.State
     , errorMessage : Maybe String
     }
-
-
-type Problem
-    = InvalidEntry ValidatedField String
-    | ServerError String
 
 
 type alias Form =
@@ -48,20 +41,14 @@ type alias Form =
 
 init : Session -> ( Model, Cmd Msg )
 init session =
-    let
-        ( navbarState, navbarCmd ) =
-            Navbar.initialState NavbarMsg
-    in
     ( { session = session
-      , problems = []
       , form =
             { username = ""
             , password = ""
             }
-      , navbarState = navbarState
       , errorMessage = Nothing
       }
-    , navbarCmd
+    , Cmd.none
     )
 
 
@@ -164,7 +151,6 @@ type Msg
     | EnteredPassword String
     | CompletedLogin (Api.Response Viewer)
     | GotSession Session
-    | NavbarMsg Navbar.State
     | CloseModal
 
 
@@ -172,16 +158,9 @@ update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         SubmittedForm ->
-            case validate model.form of
-                Ok validForm ->
-                    ( { model | problems = [] }
-                    , login validForm
-                    )
-
-                Err problems ->
-                    ( { model | problems = problems }
-                    , Cmd.none
-                    )
+            ( model
+            , login <| trimFields model.form
+            )
 
         EnteredUsername username ->
             updateForm (\form -> { form | username = username }) model
@@ -204,9 +183,6 @@ update msg model =
             , Route.replaceUrl (Session.navKey session) Route.Root
             )
 
-        NavbarMsg state ->
-            ( { model | navbarState = state }, Cmd.none )
-
         CloseModal ->
             ( { model | errorMessage = Nothing }, Cmd.none )
 
@@ -222,10 +198,7 @@ updateForm transform model =
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-    Sub.batch
-        [ Session.changes GotSession (Session.navKey model.session)
-        , Navbar.subscriptions model.navbarState NavbarMsg
-        ]
+    Session.changes GotSession (Session.navKey model.session)
 
 
 
@@ -234,53 +207,6 @@ subscriptions model =
 
 type TrimmedForm
     = Trimmed Form
-
-
-type ValidatedField
-    = Email
-    | Password
-
-
-fieldsToValidate : List ValidatedField
-fieldsToValidate =
-    [ Email
-    , Password
-    ]
-
-
-{-| Trim the form and validate its fields. If there are problems, report them!
--}
-validate : Form -> Result (List Problem) TrimmedForm
-validate form =
-    let
-        trimmedForm =
-            trimFields form
-    in
-    case List.concatMap (validateField trimmedForm) fieldsToValidate of
-        [] ->
-            Ok trimmedForm
-
-        problems ->
-            Err problems
-
-
-validateField : TrimmedForm -> ValidatedField -> List Problem
-validateField (Trimmed form) field =
-    List.map (InvalidEntry field) <|
-        case field of
-            Email ->
-                if String.isEmpty form.username then
-                    [ "email can't be blank." ]
-
-                else
-                    []
-
-            Password ->
-                if String.isEmpty form.password then
-                    [ "password can't be blank." ]
-
-                else
-                    []
 
 
 trimFields : Form -> TrimmedForm

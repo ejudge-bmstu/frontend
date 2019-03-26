@@ -12,6 +12,6 @@ import Html.Attributes exposing (alt, class, id, src, tabindex)
 
 view : { title : String, content : Html msg }
 view =
-    { title = "Page Not Found"
-    , content = div [] [ text "not found" ]
+    { title = "Не найдено"
+    , content = div [] [ text "Не найдено" ]
     }

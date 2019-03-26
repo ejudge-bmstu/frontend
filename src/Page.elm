@@ -23,10 +23,10 @@ type Page
     | RegisterConfirm
 
 
-view : Maybe Viewer -> Page -> { title : String, content : Html msg } -> Navbar.State -> (Navbar.State -> msg) -> Document msg
-view maybeViewer page { title, content } navbarState msg =
+view : Maybe Viewer -> Page -> { title : String, content : Html msg } -> Document msg
+view maybeViewer page { title, content } =
     { title = title
-    , body = viewHeader page maybeViewer navbarState msg :: content :: [ viewFooter ]
+    , body = viewHeader page maybeViewer :: content :: [ viewFooter ]
     }
 
 
@@ -37,57 +37,101 @@ viewWithoutHeader maybeViewer page { title, content } =
     }
 
 
-viewHeader : Page -> Maybe Viewer -> Navbar.State -> (Navbar.State -> msg) -> Html msg
-viewHeader page maybeViewer navbarState msg =
+viewHeader : Page -> Maybe Viewer -> Html msg
+viewHeader page maybeViewer =
     case maybeViewer of
         Just viewer ->
-            viewViewerHeader page viewer navbarState msg
+            viewViewerHeader page viewer
 
         Nothing ->
-            viewGuestHeader page navbarState msg
+            viewGuestHeader page
 
 
-viewViewerHeader : Page -> Viewer -> Navbar.State -> (Navbar.State -> msg) -> Html msg
-viewViewerHeader page viewer navbarState toNavbarMsg =
-    Navbar.config toNavbarMsg
-        |> Navbar.withAnimation
-        |> Navbar.collapseMedium
-        -- Collapse menu at the medium breakpoint
-        |> Navbar.dark
-        -- Customize coloring
-        |> Navbar.brand
-            -- Add logo to your brand with a little styling to align nicely
-            [ href "/" ]
-            [ text " Еджудж"
+viewViewerHeader : Page -> Viewer -> Html msg
+viewViewerHeader page viewer =
+    nav [ class "navbar navbar-expand-lg navbar-dark bg-dark" ]
+        [ div [ class "container" ]
+            [ a [ class "navbar-brand", href "#" ]
+                [ text "Container" ]
+            , button [ attribute "aria-controls" "navbarsExample07", attribute "aria-expanded" "false", attribute "aria-label" "Toggle navigation", class "navbar-toggler", attribute "data-target" "#navbarsExample07", attribute "data-toggle" "collapse", type_ "button" ]
+                [ span [ class "navbar-toggler-icon" ]
+                    []
+                ]
+            , div [ class "collapse navbar-collapse", id "navbarsExample07" ]
+                [ ul [ class "navbar-nav mr-auto" ]
+                    [ li [ class "nav-item active" ]
+                        [ a [ class "nav-link", href "#" ]
+                            [ text "Home "
+                            , span [ class "sr-only" ]
+                                [ text "(current)" ]
+                            ]
+                        ]
+                    , li [ class "nav-item" ]
+                        [ a [ class "nav-link", href "#" ]
+                            [ text "Link" ]
+                        ]
+                    , li [ class "nav-item" ]
+                        [ a [ class "nav-link disabled", href "#" ]
+                            [ text "Disabled" ]
+                        ]
+                    , li [ class "nav-item dropdown" ]
+                        [ a [ attribute "aria-expanded" "false", attribute "aria-haspopup" "true", class "nav-link dropdown-toggle", attribute "data-toggle" "dropdown", href "#", id "dropdown07" ]
+                            [ text "Dropdown" ]
+                        , div [ attribute "aria-labelledby" "dropdown07", class "dropdown-menu" ]
+                            [ a [ class "dropdown-item", href "#" ]
+                                [ text "Action" ]
+                            , a [ class "dropdown-item", href "#" ]
+                                [ text "Another action" ]
+                            , a [ class "dropdown-item", href "#" ]
+                                [ text "Something else here" ]
+                            ]
+                        ]
+                    ]
+                ]
             ]
-        |> Navbar.customItems
-            [ Navbar.customItem <|
-                Button.linkButton [ Button.light, Button.attrs [ Spacing.mx2, Route.href Route.Logout ] ] [ text "Выход" ]
-            ]
-        |> Navbar.view navbarState
+        ]
 
 
-viewGuestHeader : Page -> Navbar.State -> (Navbar.State -> msg) -> Html msg
-viewGuestHeader page navbarState toNavbarMsg =
-    -- Wrap in a container to center the navbar
-    Navbar.config toNavbarMsg
-        |> Navbar.withAnimation
-        |> Navbar.collapseMedium
-        -- Collapse menu at the medium breakpoint
-        |> Navbar.dark
-        -- Customize coloring
-        |> Navbar.brand
-            -- Add logo to your brand with a little styling to align nicely
-            [ href "/", style "font-family" "'Lobster', cursive" ]
-            [ text " Еджудж"
+viewGuestHeader : Page -> Html msg
+viewGuestHeader page =
+    nav [ class "navbar navbar-expand-lg navbar-dark bg-dark" ]
+        [ div [ class "container" ]
+            [ a
+                [ class "navbar-brand"
+                , Route.href Route.Root
+                , style "font-family" "'Lobster', cursive"
+                ]
+                [ text "Еджудж" ]
+            , button
+                [ attribute "data-target" "#ejudje-navbar"
+                , attribute "aria-expanded" "false"
+                , attribute "aria-label" "Toggle navigation"
+                , class "navbar-toggler"
+                , attribute "data-toggle" "collapse"
+                , type_ "button"
+                ]
+                [ span [ class "navbar-toggler-icon" ] []
+                ]
+            , div [ class "collapse navbar-collapse", id "ejudje-navbar" ]
+                [ ul [ class "navbar-nav ml-auto" ]
+                    [ li [ class "nav-item" ]
+                        [ Button.linkButton
+                            [ Button.light
+                            , Button.attrs [ Spacing.mx2, Route.href Route.Register ]
+                            ]
+                            [ text "Регистрация" ]
+                        ]
+                    , li [ class "nav-item dropdown" ]
+                        [ Button.linkButton
+                            [ Button.outlineLight
+                            , Button.attrs [ Spacing.mx2, Route.href Route.Login ]
+                            ]
+                            [ text "Вход" ]
+                        ]
+                    ]
+                ]
             ]
-        |> Navbar.customItems
-            [ Navbar.customItem <|
-                Button.linkButton [ Button.light, Button.attrs [ Spacing.mx2, Route.href Route.Register ] ] [ text "Регистрация" ]
-            , Navbar.customItem <|
-                Button.linkButton [ Button.outlineLight, Button.attrs [ Spacing.mx2, Route.href Route.Login ] ] [ text "Вход" ]
-            ]
-        |> Navbar.view navbarState
+        ]
 
 
 viewFooter : Html msg

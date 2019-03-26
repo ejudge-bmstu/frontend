@@ -46,18 +46,18 @@ init maybeViewer url navKey =
 view : Model -> Document Msg
 view model =
     let
-        viewPage page toMsg config maybeNavbar =
-            case maybeNavbar of
-                Just ( navbarState, toNavbarMsg ) ->
+        viewPage page toMsg config withNavbar =
+            case withNavbar of
+                True ->
                     let
                         { title, body } =
-                            Page.view (Session.viewer (toSession model)) page config navbarState toNavbarMsg
+                            Page.view (Session.viewer (toSession model)) page config
                     in
                     { title = title
                     , body = List.map (Html.map toMsg) body
                     }
 
-                Nothing ->
+                False ->
                     let
                         { title, body } =
                             Page.viewWithoutHeader (Session.viewer (toSession model)) page config
@@ -68,26 +68,22 @@ view model =
     in
     case model of
         Init _ ->
-            viewPage Page.Other (\_ -> Ignored) Blank.view Nothing
+            viewPage Page.Other (\_ -> Ignored) Blank.view False
 
         NotFound _ ->
-            viewPage Page.Other (\_ -> Ignored) NotFound.view Nothing
+            viewPage Page.Other (\_ -> Ignored) NotFound.view False
 
         Root root ->
-            viewPage Page.Root GotRootMsg (Root.view root) <|
-                Just ( root.navbarState, Root.NavbarMsg )
+            viewPage Page.Root GotRootMsg (Root.view root) True
 
         Login login ->
-            viewPage Page.Login GotLoginMsg (Login.view login) <|
-                Just ( login.navbarState, Login.NavbarMsg )
+            viewPage Page.Login GotLoginMsg (Login.view login) True
 
         Register register ->
-            viewPage Page.Register GotRegisterMsg (Register.view register) <|
-                Just ( register.navbarState, Register.NavbarMsg )
+            viewPage Page.Register GotRegisterMsg (Register.view register) True
 
         RegisterConfirm register ->
-            viewPage Page.RegisterConfirm GotRegisterConfirmMsg (RegisterConfirm.view register) <|
-                Just ( register.navbarState, RegisterConfirm.NavbarMsg )
+            viewPage Page.RegisterConfirm GotRegisterConfirmMsg (RegisterConfirm.view register) True
 
 
 
