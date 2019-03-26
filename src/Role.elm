@@ -1,4 +1,4 @@
-module Role exposing (Role(..), decoder, encode, toString)
+module Role exposing (Role(..), decoder, encode)
 
 import Json.Decode as Decode exposing (Decoder)
 import Json.Encode as Encode exposing (Value)
@@ -9,7 +9,8 @@ import Json.Encode as Encode exposing (Value)
 
 
 type Role
-    = Role String
+    = Admin
+    | User
 
 
 
@@ -18,7 +19,19 @@ type Role
 
 decoder : Decoder Role
 decoder =
-    Decode.map Role Decode.string
+    Decode.string
+        |> Decode.andThen
+            (\str ->
+                case str of
+                    "admin" ->
+                        Decode.succeed Admin
+
+                    "user" ->
+                        Decode.succeed User
+
+                    _ ->
+                        Decode.fail <| "Unknown role"
+            )
 
 
 
@@ -26,10 +39,10 @@ decoder =
 
 
 encode : Role -> Value
-encode (Role role) =
-    Encode.string role
+encode role =
+    case role of
+        Admin ->
+            Encode.string "admin"
 
-
-toString : Role -> String
-toString (Role role) =
-    role
+        User ->
+            Encode.string "user"

@@ -1,4 +1,4 @@
-module Api.Endpoint exposing (Endpoint, login, register, registerComplete, request)
+module Api.Endpoint exposing (Endpoint, login, register, registerComplete, request, addCategory)
 
 import Http
 import Url.Builder exposing (QueryParameter)
@@ -65,3 +65,12 @@ register =
 registerComplete : Endpoint
 registerComplete =
     url [ "register", "confirm" ] []
+
+
+addCategory : Endpoint
+addCategory =
+    url [ "category", "add" ] []
+
+listCategories : Endpoint
+listCategories =
+    url [ "category", "list" ] []

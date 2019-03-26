@@ -1,7 +1,8 @@
-module Page exposing (Page(..), view, viewWithoutHeader)
+module Page exposing (Page(..), Settings, view, viewWithoutHeader)
 
 import Api
 import Bootstrap.Button as Button
+import Bootstrap.Dropdown as Dropdown
 import Bootstrap.Form as Form
 import Bootstrap.Grid as Grid
 import Bootstrap.Navbar as Navbar
@@ -11,7 +12,9 @@ import Cred exposing (Cred)
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
+import Role exposing (Role(..))
 import Route exposing (Route)
+import Username
 import Viewer exposing (Viewer)
 
 
@@ -21,117 +24,133 @@ type Page
     | Login
     | Register
     | RegisterConfirm
+    | AddCategory
 
 
-view : Maybe Viewer -> Page -> { title : String, content : Html msg } -> Document msg
-view maybeViewer page { title, content } =
-    { title = title
-    , body = viewHeader page maybeViewer :: content :: [ viewFooter ]
+type alias Settings msg =
+    { navbar : Navbar.State
+    , toNavbarMsg : Navbar.State -> msg
+    , userDropdown : Dropdown.State
+    , toUserDropdownMsg : Dropdown.State -> msg
     }
 
 
-viewWithoutHeader : Maybe Viewer -> Page -> { title : String, content : Html msg } -> Document msg
-viewWithoutHeader maybeViewer page { title, content } =
+view :
+    Maybe Viewer
+    -> Page
+    -> { title : String, content : Html msg }
+    -> (msg -> rootMsg)
+    -> Settings rootMsg
+    -> Document rootMsg
+view maybeViewer page { title, content } toRootMsg ps =
     { title = title
-    , body = content :: [ viewFooter ]
+    , body = viewHeader page maybeViewer ps :: Html.map toRootMsg content :: [ viewFooter ]
     }
 
 
-viewHeader : Page -> Maybe Viewer -> Html msg
-viewHeader page maybeViewer =
-    case maybeViewer of
+viewWithoutHeader :
+    Maybe Viewer
+    -> Page
+    -> { title : String, content : Html msg }
+    -> (msg -> rootMsg)
+    -> Document rootMsg
+viewWithoutHeader maybeViewer page { title, content } toRootMsg =
+    { title = title
+    , body = Html.map toRootMsg content :: [ viewFooter ]
+    }
+
+
+viewHeader : Page -> Maybe Viewer -> Settings msg -> Html msg
+viewHeader page viewer ps =
+    let
+        items =
+            mkMenu viewer ps
+    in
+    div [ class "bg-dark" ]
+        [ Navbar.config ps.toNavbarMsg
+            |> Navbar.withAnimation
+            |> Navbar.collapseMedium
+            |> Navbar.container
+            |> Navbar.dark
+            |> Navbar.brand
+                [ href "/", style "font-family" "'Lobster', cursive" ]
+                [ text " Еджудж"
+                ]
+            |> Navbar.items []
+            |> Navbar.customItems items
+            |> Navbar.view ps.navbar
+        ]
+
+
+mkMenu : Maybe Viewer -> Settings msg -> List (Navbar.CustomItem msg)
+mkMenu mViewer ps =
+    case mViewer of
         Just viewer ->
-            viewViewerHeader page viewer
+            mkViewerMenu viewer ps
 
         Nothing ->
-            viewGuestHeader page
+            mkGuestMenu ps
 
 
-viewViewerHeader : Page -> Viewer -> Html msg
-viewViewerHeader page viewer =
-    nav [ class "navbar navbar-expand-lg navbar-dark bg-dark" ]
-        [ div [ class "container" ]
-            [ a [ class "navbar-brand", href "#" ]
-                [ text "Container" ]
-            , button [ attribute "aria-controls" "navbarsExample07", attribute "aria-expanded" "false", attribute "aria-label" "Toggle navigation", class "navbar-toggler", attribute "data-target" "#navbarsExample07", attribute "data-toggle" "collapse", type_ "button" ]
-                [ span [ class "navbar-toggler-icon" ]
+mkViewerMenu : Viewer -> Settings msg -> List (Navbar.CustomItem msg)
+mkViewerMenu viewer ps =
+    let
+        role =
+            Viewer.cred >> Api.role <| viewer
+
+        username =
+            Viewer.cred >> Api.username <| viewer
+
+        usernameStr =
+            Username.toString username
+
+        adminMenu =
+            case role of
+                Admin ->
+                    mkAdminMenu ps
+
+                User ->
                     []
-                ]
-            , div [ class "collapse navbar-collapse", id "navbarsExample07" ]
-                [ ul [ class "navbar-nav mr-auto" ]
-                    [ li [ class "nav-item active" ]
-                        [ a [ class "nav-link", href "#" ]
-                            [ text "Home "
-                            , span [ class "sr-only" ]
-                                [ text "(current)" ]
-                            ]
+
+        items =
+            [ Navbar.customItem <|
+                Dropdown.dropdown
+                    ps.userDropdown
+                    { options = []
+                    , toggleMsg = ps.toUserDropdownMsg
+                    , toggleButton =
+                        Dropdown.toggle [ Button.dark ] [ text usernameStr ]
+                    , items =
+                        [ Dropdown.anchorItem [] [ text "Профиль" ]
+                        , Dropdown.divider
+                        , Dropdown.anchorItem [ Route.href Route.Logout ] [ text "Выход" ]
                         ]
-                    , li [ class "nav-item" ]
-                        [ a [ class "nav-link", href "#" ]
-                            [ text "Link" ]
-                        ]
-                    , li [ class "nav-item" ]
-                        [ a [ class "nav-link disabled", href "#" ]
-                            [ text "Disabled" ]
-                        ]
-                    , li [ class "nav-item dropdown" ]
-                        [ a [ attribute "aria-expanded" "false", attribute "aria-haspopup" "true", class "nav-link dropdown-toggle", attribute "data-toggle" "dropdown", href "#", id "dropdown07" ]
-                            [ text "Dropdown" ]
-                        , div [ attribute "aria-labelledby" "dropdown07", class "dropdown-menu" ]
-                            [ a [ class "dropdown-item", href "#" ]
-                                [ text "Action" ]
-                            , a [ class "dropdown-item", href "#" ]
-                                [ text "Another action" ]
-                            , a [ class "dropdown-item", href "#" ]
-                                [ text "Something else here" ]
-                            ]
-                        ]
-                    ]
-                ]
+                    }
             ]
-        ]
+    in
+    items
 
 
-viewGuestHeader : Page -> Html msg
-viewGuestHeader page =
-    nav [ class "navbar navbar-expand-lg navbar-dark bg-dark" ]
-        [ div [ class "container" ]
-            [ a
-                [ class "navbar-brand"
-                , Route.href Route.Root
-                , style "font-family" "'Lobster', cursive"
-                ]
-                [ text "Еджудж" ]
-            , button
-                [ attribute "data-target" "#ejudje-navbar"
-                , attribute "aria-expanded" "false"
-                , attribute "aria-label" "Toggle navigation"
-                , class "navbar-toggler"
-                , attribute "data-toggle" "collapse"
-                , type_ "button"
-                ]
-                [ span [ class "navbar-toggler-icon" ] []
-                ]
-            , div [ class "collapse navbar-collapse", id "ejudje-navbar" ]
-                [ ul [ class "navbar-nav ml-auto" ]
-                    [ li [ class "nav-item" ]
-                        [ Button.linkButton
-                            [ Button.light
-                            , Button.attrs [ Spacing.mx2, Route.href Route.Register ]
-                            ]
-                            [ text "Регистрация" ]
-                        ]
-                    , li [ class "nav-item dropdown" ]
-                        [ Button.linkButton
-                            [ Button.outlineLight
-                            , Button.attrs [ Spacing.mx2, Route.href Route.Login ]
-                            ]
-                            [ text "Вход" ]
-                        ]
-                    ]
-                ]
-            ]
-        ]
+mkAdminMenu : Settings msg -> List (Html msg)
+mkAdminMenu ps =
+    [ Dropdown.dropdown
+        ps.userDropdown
+        { options = []
+        , toggleMsg = ps.toUserDropdownMsg
+        , toggleButton =
+            Dropdown.toggle [ Button.primary ] [ text "My dropdown" ]
+        , items = []
+        }
+    ]
+
+
+mkGuestMenu : Settings msg -> List (Navbar.CustomItem msg)
+mkGuestMenu ps =
+    [ Navbar.customItem <|
+        Button.linkButton [ Button.light, Button.attrs [ Spacing.mx2, Route.href Route.Register ] ] [ text "Регистрация" ]
+    , Navbar.customItem <|
+        Button.linkButton [ Button.outlineLight, Button.attrs [ Spacing.mx2, Route.href Route.Login ] ] [ text "Вход" ]
+    ]
 
 
 viewFooter : Html msg

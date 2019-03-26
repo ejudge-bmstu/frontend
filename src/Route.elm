@@ -18,6 +18,7 @@ type Route
     | Logout
     | Register
     | RegisterConfirm (Maybe String)
+    | AddCategory
 
 
 parser : Parser (Route -> a) a
@@ -28,6 +29,7 @@ parser =
         , Parser.map Logout (s "logout")
         , Parser.map Register (s "register")
         , Parser.map RegisterConfirm (s "register" </> s "confirm" <?> string "token")
+        , Parser.map AddCategory (s "category" </> s "add")
         ]
 
 
@@ -73,5 +75,8 @@ routeToString page =
 
                 RegisterConfirm _ ->
                     [ "register", "confirm" ]
+
+                AddCategory ->
+                    [ "category", "add"]
     in
     "/" ++ String.join "/" pieces
