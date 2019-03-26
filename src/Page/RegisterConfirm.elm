@@ -28,30 +28,24 @@ import Viewer exposing (Viewer)
 
 type alias Model =
     { session : Session
-    , navbarState : Navbar.State
     , message : String
     }
 
 
 type Msg
     = GotSession Session
-    | NavbarMsg Navbar.State
     | CompletedRegister (Api.Response ())
     | CloseModal
 
 
 init : Session -> Maybe String -> ( Model, Cmd Msg )
 init session maybeToken =
-    let
-        ( navbarState, navbarCmd ) =
-            Navbar.initialState NavbarMsg
-    in
     case maybeToken of
         Just token ->
-            ( Model session navbarState "Подождите...", Cmd.batch [ navbarCmd, registerComplete token ] )
+            ( Model session "Подождите...", registerComplete token )
 
         Nothing ->
-            ( Model session navbarState "Плохая ссылка", Cmd.batch [ navbarCmd ] )
+            ( Model session "Плохая ссылка", Cmd.none )
 
 
 view : Model -> { title : String, content : Html Msg }
@@ -86,9 +80,6 @@ update msg model =
             , Route.replaceUrl (Session.navKey session) Route.Root
             )
 
-        NavbarMsg state ->
-            ( { model | navbarState = state }, Cmd.none )
-
         CompletedRegister (Ok _) ->
             Debug.log "ok" <|
                 ( { model | message = "Учетная запись подтверждена, можете войти используя введенные данные." }, Cmd.none )
@@ -113,10 +104,7 @@ registerComplete token =
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-    Sub.batch
-        [ Session.changes GotSession (Session.navKey model.session)
-        , Navbar.subscriptions model.navbarState NavbarMsg
-        ]
+    Session.changes GotSession (Session.navKey model.session)
 
 
 toSession : Model -> Session

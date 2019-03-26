@@ -30,18 +30,11 @@ import Viewer exposing (Viewer)
 
 type alias Model =
     { session : Session
-    , problems : List Problem
     , form : Form
-    , navbarState : Navbar.State
     , errorMessage : String
     , errorModalVisibility : Modal.Visibility
     , okModalVisibility : Modal.Visibility
     }
-
-
-type Problem
-    = InvalidEntry ValidatedField String
-    | ServerError String
 
 
 type alias Form =
@@ -53,23 +46,17 @@ type alias Form =
 
 init : Session -> ( Model, Cmd Msg )
 init session =
-    let
-        ( navbarState, navbarCmd ) =
-            Navbar.initialState NavbarMsg
-    in
     ( { session = session
-      , problems = []
       , form =
             { username = ""
             , email = ""
             , password = ""
             }
-      , navbarState = navbarState
       , errorMessage = ""
       , errorModalVisibility = Modal.hidden
       , okModalVisibility = Modal.hidden
       }
-    , navbarCmd
+    , Cmd.none
     )
 
 
@@ -178,7 +165,7 @@ viewForm form =
             ]
         , Button.button
             [ Button.primary, Button.attrs [ Size.w100 ] ]
-            [ text "Войти" ]
+            [ text "Зарегистрироваться" ]
         ]
 
 
@@ -193,7 +180,6 @@ type Msg
     | EnteredPassword String
     | CompletedRegister (Api.Response ())
     | GotSession Session
-    | NavbarMsg Navbar.State
     | CloseErrorModal
     | CloseOkModal
 
@@ -202,16 +188,9 @@ update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         SubmittedForm ->
-            case validate model.form of
-                Ok validForm ->
-                    ( { model | problems = [] }
-                    , register validForm
-                    )
-
-                Err problems ->
-                    ( { model | problems = problems }
-                    , Cmd.none
-                    )
+            ( model
+            , register (trimFields model.form)
+            )
 
         EnteredUsername username ->
             updateForm (\form -> { form | username = username }) model
@@ -237,9 +216,6 @@ update msg model =
             , Route.replaceUrl (Session.navKey session) Route.Root
             )
 
-        NavbarMsg state ->
-            ( { model | navbarState = state }, Cmd.none )
-
         CloseErrorModal ->
             ( { model | errorModalVisibility = Modal.hidden }, Cmd.none )
 
@@ -260,10 +236,7 @@ updateForm transform model =
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-    Sub.batch
-        [ Session.changes GotSession (Session.navKey model.session)
-        , Navbar.subscriptions model.navbarState NavbarMsg
-        ]
+    Session.changes GotSession (Session.navKey model.session)
 
 
 
@@ -284,41 +257,6 @@ fieldsToValidate =
     [ Email
     , Password
     ]
-
-
-{-| Trim the form and validate its fields. If there are problems, report them!
--}
-validate : Form -> Result (List Problem) TrimmedForm
-validate form =
-    let
-        trimmedForm =
-            trimFields form
-    in
-    case List.concatMap (validateField trimmedForm) fieldsToValidate of
-        [] ->
-            Ok trimmedForm
-
-        problems ->
-            Err problems
-
-
-validateField : TrimmedForm -> ValidatedField -> List Problem
-validateField (Trimmed form) field =
-    List.map (InvalidEntry field) <|
-        case field of
-            Email ->
-                if String.isEmpty form.email then
-                    [ "email can't be blank." ]
-
-                else
-                    []
-
-            Password ->
-                if String.isEmpty form.password then
-                    [ "password can't be blank." ]
-
-                else
-                    []
 
 
 trimFields : Form -> TrimmedForm

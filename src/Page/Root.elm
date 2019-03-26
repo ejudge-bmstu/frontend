@@ -9,22 +9,16 @@ import Session exposing (Session)
 
 type alias Model =
     { session : Session
-    , navbarState : Navbar.State
     }
 
 
 type Msg
     = GotSession Session
-    | NavbarMsg Navbar.State
 
 
 init : Session -> ( Model, Cmd Msg )
 init session =
-    let
-        ( navbarState, navbarCmd ) =
-            Navbar.initialState NavbarMsg
-    in
-    ( Model session navbarState, navbarCmd )
+    ( Model session, Cmd.none )
 
 
 view : Model -> { title : String, content : Html msg }
@@ -38,20 +32,14 @@ update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         GotSession session ->
-                ( { model | session = session }
-                , Route.replaceUrl (Session.navKey session) Route.Root
-                )
-
-        NavbarMsg state ->
-            ( { model | navbarState = state }, Cmd.none )
+            ( { model | session = session }
+            , Route.replaceUrl (Session.navKey session) Route.Root
+            )
 
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-    Sub.batch
-        [ Session.changes GotSession (Session.navKey model.session)
-        , Navbar.subscriptions model.navbarState NavbarMsg
-        ]
+    Session.changes GotSession (Session.navKey model.session)
 
 
 toSession : Model -> Session
