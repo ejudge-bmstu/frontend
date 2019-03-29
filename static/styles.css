@@ -1,5 +1,6 @@
 html, body {
   background-color: #eeeeee;
+  height: 100%;
 }
 
 .vertical-center-wrapper {
@@ -14,6 +15,12 @@ html, body {
   width: 100%;
   -ms-transform: translateY(-50%);
   transform: translateY(-50%);
+}
+
+.content {
+  background-color: #fefefe;
+  border-radius: 12px;
+  height: 100%;
 }
 
 .form-signin {

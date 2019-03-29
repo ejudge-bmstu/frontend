@@ -24,7 +24,7 @@ type Page
     | Login
     | Register
     | RegisterConfirm
-    | AddCategory
+    | Category
 
 
 type alias Settings msg =
@@ -96,10 +96,10 @@ mkViewerMenu : Viewer -> Settings msg -> List (Navbar.CustomItem msg)
 mkViewerMenu viewer ps =
     let
         role =
-            Viewer.cred >> Api.role <| viewer
+            Viewer.cred >> Cred.role <| viewer
 
         username =
-            Viewer.cred >> Api.username <| viewer
+            Viewer.cred >> Cred.username <| viewer
 
         usernameStr =
             Username.toString username
@@ -112,6 +112,9 @@ mkViewerMenu viewer ps =
                 User ->
                     []
 
+                Guest ->
+                    []
+
         items =
             [ Navbar.customItem <|
                 Dropdown.dropdown
@@ -121,7 +124,7 @@ mkViewerMenu viewer ps =
                     , toggleButton =
                         Dropdown.toggle [ Button.dark ] [ text usernameStr ]
                     , items =
-                        [ Dropdown.anchorItem [] [ text "Профиль" ]
+                        [ Dropdown.anchorItem [ Route.href Route.Root ] [ text "Профиль" ]
                         , Dropdown.divider
                         , Dropdown.anchorItem [ Route.href Route.Logout ] [ text "Выход" ]
                         ]

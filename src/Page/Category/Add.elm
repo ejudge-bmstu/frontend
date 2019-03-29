@@ -1,7 +1,6 @@
-module Page.AddCategory exposing (Model, Msg(..), init, subscriptions, toSession, update, view)
+module Page.Category.Add exposing (Model, Msg(..), init, subscriptions, toSession, update, view)
 
 import Api
-import Cred exposing (Cred)
 import Api.Endpoint as Endpoint
 import Bootstrap.Button as Button
 import Bootstrap.Form as Form
@@ -13,12 +12,15 @@ import Bootstrap.Modal as Modal
 import Bootstrap.Navbar as Navbar
 import Bootstrap.Text as Text
 import Bootstrap.Utilities.Size as Size
+import Bootstrap.Utilities.Spacing as Spacing
 import Browser.Navigation as Nav
+import Cred exposing (Cred)
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
 import Http
 import Json.Encode as Encode
+import Role
 import Route exposing (Route)
 import Session exposing (Session(..))
 import Viewer exposing (Viewer)
@@ -30,58 +32,48 @@ import Viewer exposing (Viewer)
 
 type alias Model =
     { session : Session
-    , viewer : Viewer
     , category : String
     , message : Maybe String
     }
 
 
+init : Session -> ( Model, Cmd Msg )
+init session =
+    let
+        model =
+            { session = session
+            , category = ""
+            , message = Nothing
+            }
 
+        role =
+            Session.role session
 
-init : Session -> Viewer -> ( Model, Cmd Msg )
-init session viewer =
-        ( { session = session
-          , viewer = viewer
-          , category = ""
-          , message = Nothing
-          }
-        , Cmd.none
-        )
+        navKey =
+            Session.navKey session
+    in
+    if Role.hasUserAccess role then
+        ( model, Cmd.none )
+
+    else
+        ( model, Route.replaceUrl navKey Route.NotFound )
 
 
 
 -- VIEW
 
 
-view : Model -> { title : String, content : Html Msg }
+view : Model -> Html Msg
 view model =
-    { title = "Добавление категории"
-    , content =
-        div [ class "vertical-center-wrapper" ]
-            [ div [ class "vertical-center" ]
-                [ Grid.container
-                    []
-                    [ Grid.row
-                        [ Row.middleXs
-                        , Row.centerXs
-                        , Row.attrs []
-                        ]
-                        [ Grid.col
-                            [ Col.lg4
-                            , Col.textAlign Text.alignMdCenter
-                            ]
-                            [ h1 [] [ text "Вход" ]
-                            , Button.linkButton
-                                [ Button.attrs [ Route.href Route.Register ] ]
-                                [ text <| "Нет аккаунта?" ]
-                            -- , viewForm model.form
-                            ]
-                        ]
-                    ]
-                ]
-            , showModal model.message
+    div []
+        [ Form.form []
+            [ h4 [] [ text "Добавление категории" ]
+            , Form.group []
+                [ Input.text [ Input.attrs [ placeholder "Название категории", required True ], Input.onInput EnteredCategory ] ]
+            , Button.button [ Button.primary, Button.onClick SubmittedForm ] [ text "Добавить" ]
             ]
-    }
+        , showModal model.message
+        ]
 
 
 showModal : Maybe String -> Html Msg
@@ -125,7 +117,8 @@ type Msg
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     let
-        cred = Viewer.cred model.viewer
+        cred =
+            Session.cred model.session
     in
     case msg of
         SubmittedForm ->
@@ -134,10 +127,10 @@ update msg model =
             )
 
         EnteredCategory category ->
-            ( {model | category = category} , Cmd.none)
+            ( { model | category = category }, Cmd.none )
 
         Added (Ok viewer) ->
-            ( { model | message = Just ("Категория " ++ model.category ++" добавлена!"), category = "" }
+            ( { model | message = Just ("Категория " ++ model.category ++ " добавлена!"), category = "" }
             , Cmd.none
             )
 
@@ -155,19 +148,20 @@ update msg model =
             ( { model | message = Nothing }, Cmd.none )
 
 
+
 -- SUBSCRIPTIONS
 
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-    Session.changes GotSession (Session.navKey model.session)
+    Sub.none
 
 
 
 -- HTTP
 
 
-sendCategory : Cred -> String -> Cmd Msg
+sendCategory : Maybe Cred -> String -> Cmd Msg
 sendCategory cred category =
     let
         body =
@@ -176,7 +170,7 @@ sendCategory cred category =
                 ]
                 |> Http.jsonBody
     in
-    Api.postExpectEmpty Endpoint.addCategory Nothing body Added
+    Api.postExpectEmpty Endpoint.addCategory cred body Added
 
 
 

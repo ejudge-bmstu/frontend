@@ -5,7 +5,8 @@ import Html exposing (Attribute)
 import Html.Attributes as Attr
 import Url exposing (Url)
 import Url.Parser as Parser exposing ((</>), (<?>), Parser, oneOf, query, s, string, top)
-import Url.Parser.Query as Query exposing (string)
+import Url.Parser.Query as Query exposing (int, string)
+import Uuid exposing (Uuid)
 
 
 
@@ -14,22 +15,29 @@ import Url.Parser.Query as Query exposing (string)
 
 type Route
     = Root
+    | NotFound
     | Login
     | Logout
     | Register
     | RegisterConfirm (Maybe String)
-    | AddCategory
+    | Category (Maybe Uuid) (Maybe Int)
+
+
+uuid : String -> Query.Parser (Maybe Uuid)
+uuid name =
+    Query.map (Uuid.fromString << Maybe.withDefault "") (string name)
 
 
 parser : Parser (Route -> a) a
 parser =
     oneOf
         [ Parser.map Root top
+        , Parser.map NotFound (s "404")
         , Parser.map Login (s "login")
         , Parser.map Logout (s "logout")
         , Parser.map Register (s "register")
         , Parser.map RegisterConfirm (s "register" </> s "confirm" <?> string "token")
-        , Parser.map AddCategory (s "category" </> s "add")
+        , Parser.map Category (s "category" <?> uuid "id" <?> int "page")
         ]
 
 
@@ -64,6 +72,9 @@ routeToString page =
                 Root ->
                     []
 
+                NotFound ->
+                    [ "404" ]
+
                 Login ->
                     [ "login" ]
 
@@ -76,7 +87,7 @@ routeToString page =
                 RegisterConfirm _ ->
                     [ "register", "confirm" ]
 
-                AddCategory ->
-                    [ "category", "add"]
+                Category _ _ ->
+                    [ "category" ]
     in
     "/" ++ String.join "/" pieces

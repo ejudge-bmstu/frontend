@@ -1,4 +1,4 @@
-module Api.Endpoint exposing (Endpoint, login, register, registerComplete, request, addCategory)
+module Api.Endpoint exposing (Endpoint, addCategory, deleteCategory, editCategory, listCategories, listTasks, login, register, registerComplete, request)
 
 import Http
 import Url.Builder exposing (QueryParameter)
@@ -71,6 +71,22 @@ addCategory : Endpoint
 addCategory =
     url [ "category", "add" ] []
 
+
 listCategories : Endpoint
 listCategories =
     url [ "category", "list" ] []
+
+
+deleteCategory : Endpoint
+deleteCategory =
+    url [ "category", "delete" ] []
+
+
+editCategory : Endpoint
+editCategory =
+    url [ "category", "edit" ] []
+
+
+listTasks : String -> Endpoint
+listTasks id =
+    url [ "category", id, "tasks" ] []

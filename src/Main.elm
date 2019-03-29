@@ -10,8 +10,8 @@ import Debug exposing (..)
 import Html exposing (..)
 import Json.Decode as Decode exposing (Value)
 import Page exposing (Page)
-import Page.AddCategory as AddCategory
 import Page.Blank as Blank
+import Page.Category as Category
 import Page.Login as Login
 import Page.NotFound as NotFound
 import Page.Register as Register
@@ -37,7 +37,7 @@ type Page
     | Login Login.Model
     | Register Register.Model
     | RegisterConfirm RegisterConfirm.Model
-    | AddCategory AddCategory.Model
+    | Category Category.Model
 
 
 
@@ -48,7 +48,7 @@ init : Maybe Viewer -> Url -> Nav.Key -> ( Model, Cmd Msg )
 init maybeViewer url navKey =
     let
         ( navbarState, navbarCmd ) =
-            Navbar.initialState GotNavbarMsg
+            Navbar.initialState NavbarMsg
 
         initModel =
             { page = Init (Session.fromViewer navKey maybeViewer)
@@ -74,9 +74,9 @@ view model =
 
         pageSettings =
             { navbar = model.navbar
-            , toNavbarMsg = GotNavbarMsg
+            , toNavbarMsg = NavbarMsg
             , userDropdown = model.userDropdown
-            , toUserDropdownMsg = GotDropdownMsg
+            , toUserDropdownMsg = DropdownMsg
             }
 
         viewPage page toMsg config withNavbar =
@@ -95,19 +95,19 @@ view model =
             viewPage Page.Other (\_ -> Ignored) NotFound.view False
 
         Root root ->
-            viewPage Page.Root GotRootMsg (Root.view root) True
+            viewPage Page.Root RootMsg (Root.view root) True
 
         Login login ->
-            viewPage Page.Login GotLoginMsg (Login.view login) True
+            viewPage Page.Login LoginMsg (Login.view login) True
 
         Register register ->
-            viewPage Page.Register GotRegisterMsg (Register.view register) True
+            viewPage Page.Register RegisterMsg (Register.view register) True
 
         RegisterConfirm register ->
-            viewPage Page.RegisterConfirm GotRegisterConfirmMsg (RegisterConfirm.view register) True
+            viewPage Page.RegisterConfirm RegisterConfirmMsg (RegisterConfirm.view register) True
 
-        AddCategory category ->
-            viewPage Page.AddCategory GotAddCategoryMsg (AddCategory.view category) True
+        Category category ->
+            viewPage Page.Category CategoryMsg (Category.view category) True
 
 
 
@@ -119,14 +119,13 @@ type Msg
     | ChangedRoute (Maybe Route)
     | ChangedUrl Url
     | ClickedLink Browser.UrlRequest
-    | GotRootMsg Root.Msg
-    | GotLoginMsg Login.Msg
-    | GotRegisterMsg Register.Msg
-    | GotRegisterConfirmMsg RegisterConfirm.Msg
-    | GotAddCategoryMsg AddCategory.Msg
-    | GotNavbarMsg Navbar.State
-    | GotDropdownMsg Dropdown.State
-
+    | RootMsg Root.Msg
+    | LoginMsg Login.Msg
+    | RegisterMsg Register.Msg
+    | RegisterConfirmMsg RegisterConfirm.Msg
+    | CategoryMsg Category.Msg
+    | NavbarMsg Navbar.State
+    | DropdownMsg Dropdown.State
 
 
 toSession : Model -> Session
@@ -150,8 +149,8 @@ toSession model =
         RegisterConfirm register ->
             RegisterConfirm.toSession register
 
-        AddCategory category ->
-            AddCategory.toSession category
+        Category category ->
+            Category.toSession category
 
 
 changeRouteTo : Maybe Route -> Model -> ( Model, Cmd Msg )
@@ -164,86 +163,86 @@ changeRouteTo maybeRoute model =
         Nothing ->
             ( { model | page = NotFound session }, Cmd.none )
 
+        Just Route.NotFound ->
+            ( { model | page = NotFound session }, Cmd.none )
+
         Just Route.Root ->
             Root.init session
-                |> updateWith model Root GotRootMsg
+                |> updateWith model Root RootMsg
 
         Just Route.Login ->
             Login.init session
-                |> updateWith model Login GotLoginMsg
+                |> updateWith model Login LoginMsg
 
         Just Route.Register ->
             Register.init session
-                |> updateWith model Register GotRegisterMsg
+                |> updateWith model Register RegisterMsg
 
         Just (Route.RegisterConfirm token) ->
             RegisterConfirm.init session token
-                |> updateWith model RegisterConfirm GotRegisterConfirmMsg
+                |> updateWith model RegisterConfirm RegisterConfirmMsg
 
         Just Route.Logout ->
             ( model, Api.logout )
 
-        Just Route.AddCategory ->
-            case session of
-                LoggedIn _ viewer ->
-                    AddCategory.init session viewer
-                        |> updateWith model AddCategory GotAddCategoryMsg
-                Guest _ -> changeRouteTo Nothing model
-
+        Just Route.Category ->
+            Category.init session
+                |> updateWith model Category CategoryMsg
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
-    case ( msg, model.page ) of
-        ( Ignored, _ ) ->
-            ( model, Cmd.none )
+    Debug.log "!!" <|
+        case ( msg, model.page ) of
+            ( Ignored, _ ) ->
+                ( model, Cmd.none )
 
-        ( ClickedLink urlRequest, _ ) ->
-            case urlRequest of
-                Browser.Internal url ->
-                    ( model
-                    , Nav.pushUrl (Session.navKey (toSession model)) (Url.toString url)
-                    )
+            ( ClickedLink urlRequest, _ ) ->
+                case urlRequest of
+                    Browser.Internal url ->
+                        ( model
+                        , Nav.pushUrl (Session.navKey (toSession model)) (Url.toString url)
+                        )
 
-                Browser.External href ->
-                    ( model
-                    , Nav.load href
-                    )
+                    Browser.External href ->
+                        ( model
+                        , Nav.load href
+                        )
 
-        ( ChangedUrl url, _ ) ->
-            changeRouteTo (Route.fromUrl url) model
+            ( ChangedUrl url, _ ) ->
+                changeRouteTo (Route.fromUrl url) model
 
-        ( ChangedRoute route, _ ) ->
-            changeRouteTo route model
+            ( ChangedRoute route, _ ) ->
+                changeRouteTo route model
 
-        ( GotRootMsg subMsg, Root home ) ->
-            Root.update subMsg home
-                |> updateWith model Root GotRootMsg
+            ( RootMsg subMsg, Root home ) ->
+                Root.update subMsg home
+                    |> updateWith model Root RootMsg
 
-        ( GotLoginMsg subMsg, Login login ) ->
-            Login.update subMsg login
-                |> updateWith model Login GotLoginMsg
+            ( LoginMsg subMsg, Login login ) ->
+                Login.update subMsg login
+                    |> updateWith model Login LoginMsg
 
-        ( GotRegisterMsg subMsg, Register register ) ->
-            Register.update subMsg register
-                |> updateWith model Register GotRegisterMsg
+            ( RegisterMsg subMsg, Register register ) ->
+                Register.update subMsg register
+                    |> updateWith model Register RegisterMsg
 
-        ( GotRegisterConfirmMsg subMsg, RegisterConfirm register ) ->
-            RegisterConfirm.update subMsg register
-                |> updateWith model RegisterConfirm GotRegisterConfirmMsg
+            ( RegisterConfirmMsg subMsg, RegisterConfirm register ) ->
+                RegisterConfirm.update subMsg register
+                    |> updateWith model RegisterConfirm RegisterConfirmMsg
 
-        ( GotAddCategoryMsg subMsg, AddCategory category ) ->
-            AddCategory.update subMsg category
-                |> updateWith model AddCategory GotAddCategoryMsg
+            ( CategoryMsg subMsg, Category category ) ->
+                Category.update subMsg category
+                    |> updateWith model Category CategoryMsg
 
-        ( GotNavbarMsg state, _ ) ->
-            ( { model | navbar = state }, Cmd.none )
+            ( NavbarMsg state, _ ) ->
+                ( { model | navbar = state }, Cmd.none )
 
-        ( GotDropdownMsg state, _ ) ->
-            ( { model | userDropdown = state }, Cmd.none )
+            ( DropdownMsg state, _ ) ->
+                ( { model | userDropdown = state }, Cmd.none )
 
-        ( _, _ ) ->
-            ( model, Cmd.none )
+            ( _, _ ) ->
+                ( model, Cmd.none )
 
 
 updateWith : Model -> (subModel -> Page) -> (subMsg -> Msg) -> ( subModel, Cmd subMsg ) -> ( Model, Cmd Msg )
@@ -271,23 +270,23 @@ subscriptions model =
                     Sub.none
 
                 Root root ->
-                    Sub.map GotRootMsg (Root.subscriptions root)
+                    Sub.map RootMsg (Root.subscriptions root)
 
                 Login login ->
-                    Sub.map GotLoginMsg (Login.subscriptions login)
+                    Sub.map LoginMsg (Login.subscriptions login)
 
                 Register register ->
-                    Sub.map GotRegisterMsg (Register.subscriptions register)
+                    Sub.map RegisterMsg (Register.subscriptions register)
 
                 RegisterConfirm register ->
-                    Sub.map GotRegisterConfirmMsg (RegisterConfirm.subscriptions register)
+                    Sub.map RegisterConfirmMsg (RegisterConfirm.subscriptions register)
 
-                AddCategory category ->
-                    Sub.map GotAddCategoryMsg (AddCategory.subscriptions category)
+                Category category ->
+                    Sub.map CategoryMsg (Category.subscriptions category)
     in
     Sub.batch
-        [ Dropdown.subscriptions model.userDropdown GotDropdownMsg
-        , Navbar.subscriptions model.navbar GotNavbarMsg
+        [ Dropdown.subscriptions model.userDropdown DropdownMsg
+        , Navbar.subscriptions model.navbar NavbarMsg
         , pageSub
         ]
 
