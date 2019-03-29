@@ -117,9 +117,10 @@ viewTask task =
                 [ h3 [] [ text task.name ]
                 , p [] [ text task.description ]
                 , p []
-                    [ text "Категория: "
-                    , a [ Route.href (Route.Category (Just task.category.id) Nothing) ]
-                        [ text task.category.name ]
+                    [ text <| "Категория: " ++ task.category.name
+
+                    -- , a [ Route.href (Route.Category (Just task.category.id) Nothing) ]
+                    --     [ text task.category.name ]
                     ]
                 , h4 [] [ text "Ограничения" ]
                 , Table.table
