@@ -90,4 +90,4 @@ editCategory =
 
 listTasks : Uuid -> Int -> Endpoint
 listTasks id page =
-    url [ "category", toString id, "tasks" ] [ int "page" page ]
+    url [ "categories", toString id, "tasks" ] [ int "page" page ]
