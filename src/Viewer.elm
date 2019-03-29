@@ -3,7 +3,7 @@ port module Viewer exposing (Viewer(..), cred, decoder, store, storeCache)
 import Cred exposing (Cred(..))
 import Json.Decode as Decode exposing (Decoder)
 import Json.Encode as Encode exposing (Value)
-import Role exposing (Role)
+import Role
 import Tokens
 import Username exposing (Username)
 
@@ -23,7 +23,6 @@ type Viewer
 cred : Viewer -> Cred
 cred (Viewer val) =
     val
-
 
 
 

@@ -5,26 +5,14 @@ module Page.RegisterConfirm exposing (Model, Msg(..), init, subscriptions, toSes
 import Api
 import Api.Endpoint as Endpoint
 import Bootstrap.Button as Button
-import Bootstrap.Form as Form
-import Bootstrap.Form.Input as Input
-import Bootstrap.Grid as Grid
-import Bootstrap.Grid.Col as Col
-import Bootstrap.Grid.Row as Row
 import Bootstrap.Modal as Modal
-import Bootstrap.Navbar as Navbar
-import Bootstrap.Text as Text
-import Bootstrap.Utilities.Size as Size
-import Bootstrap.Utilities.Spacing as Spacing
-import Browser.Navigation as Nav
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
 import Http
-import Json.Decode as Decode exposing (field)
 import Json.Encode as Encode
-import Route exposing (Route)
+import Route
 import Session exposing (Session)
-import Viewer exposing (Viewer)
 
 
 type alias Model =
