@@ -8,6 +8,7 @@ import Bootstrap.Card.Block as Block
 import Bootstrap.Modal as Modal
 import Bootstrap.Pagination as Pagination
 import Bootstrap.Utilities.Spacing as Spacing
+import Cred exposing (Cred)
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
@@ -58,7 +59,7 @@ init session mPage id =
             Session.navKey session
     in
     if Role.hasUserAccess role then
-        ( model, getTasks id page )
+        ( model, getTasks (Session.cred session) id page )
 
     else
         ( model, Route.replaceUrl navKey Route.NotFound )
@@ -106,7 +107,7 @@ taskView task =
     Card.config []
         |> Card.block []
             [ Block.titleH5 [] [ text task.name ]
-            , Block.link [ href "#" ] [ text "Перейти к задаче" ]
+            , Block.link [ Route.href <| Route.Task task.id ] [ text "Перейти к задаче" ]
             ]
 
 
@@ -209,14 +210,14 @@ type alias TaskList =
 taskListDecoder : Decoder TaskList
 taskListDecoder =
     D.map3 TaskList
-        (D.field "pages" D.int)
+        (D.field "total" D.int)
         (D.field "name" D.string)
         (D.field "tasks" (D.list taskDecoder))
 
 
-getTasks : Uuid -> Int -> Cmd Msg
-getTasks id page =
-    Api.get (Endpoint.listTasks id (page - 1)) Nothing GotTasks taskListDecoder
+getTasks : Maybe Cred -> Uuid -> Int -> Cmd Msg
+getTasks cred id page =
+    Api.get (Endpoint.listTasks id (page - 1)) cred GotTasks taskListDecoder
 
 
 

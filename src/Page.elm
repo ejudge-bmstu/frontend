@@ -22,6 +22,7 @@ type Page
     | Register
     | RegisterConfirm
     | Category
+    | Task
 
 
 type alias Settings msg =

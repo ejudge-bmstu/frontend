@@ -16,7 +16,7 @@ import Viewer exposing (Viewer)
 
 credHeader : Cred -> Http.Header
 credHeader (Cred _ _ tokens) =
-    Http.header "authorization" ("Bearer " ++ tokens.accessToken)
+    Http.header "Authorization" tokens.accessToken
 
 
 
