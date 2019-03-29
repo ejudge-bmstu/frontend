@@ -4,6 +4,8 @@ import Api
 import Api.Endpoint as Endpoint
 import Bootstrap.Badge as Badge
 import Bootstrap.Button as Button
+import Bootstrap.Card as Card
+import Bootstrap.Card.Block as Block
 import Bootstrap.Form as Form
 import Bootstrap.Form.Input as Input
 import Bootstrap.Grid as Grid
@@ -12,6 +14,7 @@ import Bootstrap.Grid.Row as Row
 import Bootstrap.ListGroup as ListGroup
 import Bootstrap.Modal as Modal
 import Bootstrap.Navbar as Navbar
+import Bootstrap.Pagination as Pagination
 import Bootstrap.Text as Text
 import Bootstrap.Utilities.Flex as Flex
 import Bootstrap.Utilities.Size as Size
@@ -24,9 +27,11 @@ import Html.Events exposing (..)
 import Http
 import Json.Decode as D exposing (Decoder)
 import Json.Encode as E exposing (Value)
+import List.Extra as List
 import Role
 import Route exposing (Route)
 import Session exposing (Session(..))
+import Uuid exposing (Uuid)
 import Viewer exposing (Viewer)
 
 
@@ -37,19 +42,28 @@ import Viewer exposing (Viewer)
 type alias Model =
     { session : Session
     , tasks : List Task
-    , id : String
+    , id : Uuid
+    , page : Int
+    , pages : Int
     , message : Maybe String
+    , name : String
     }
 
 
-init : Session -> String -> ( Model, Cmd Msg )
-init session id =
+init : Session -> Maybe Int -> Uuid -> ( Model, Cmd Msg )
+init session mPage id =
     let
+        page =
+            Maybe.withDefault 1 mPage
+
         model =
             { session = session
             , tasks = []
             , id = id
+            , page = page
+            , pages = 0
             , message = Nothing
+            , name = ""
             }
 
         role =
@@ -59,7 +73,7 @@ init session id =
             Session.navKey session
     in
     if Role.hasUserAccess role then
-        ( model, Cmd.none )
+        ( model, getTasks id page )
 
     else
         ( model, Route.replaceUrl navKey Route.NotFound )
@@ -71,22 +85,49 @@ init session id =
 
 view : Model -> Html Msg
 view model =
-    div [ Spacing.m1 ]
-        [ Grid.container
-            [ class "content" ]
-            [ Grid.row
-                []
-                [ Grid.col
-                    [ Col.lg3 ]
-                    [ viewTaskList model ]
-                ]
+    let
+        pages =
+            List.filter (\x -> x >= 1 && x <= model.pages) <| List.range (model.page - 2) (model.page + 2)
+
+        index =
+            Maybe.withDefault 1 <| List.elemIndex model.page pages
+    in
+    div []
+        [ h4
+            [ Spacing.mb3
+            , style "line-height" "1.5"
+            , style "border" "1px solid transparent"
             ]
+            [ text model.name ]
+        , Card.columns <|
+            List.map taskView model.tasks
+        , Pagination.defaultConfig
+            |> Pagination.ariaLabel "Pagination"
+            |> Pagination.itemsList
+                { selectedMsg = PaginationMsg
+                , prevItem = Just <| Pagination.ListItem [] [ text "<" ]
+                , nextItem = Just <| Pagination.ListItem [] [ text ">" ]
+                , activeIdx = index
+                , data = pages
+                , itemFn = \_ page -> Pagination.ListItem [] [ text <| String.fromInt page ]
+                , urlFn = \_ page -> Route.routeToString (Route.Category (Just model.id) (Just page))
+                }
+            |> Pagination.view
         ]
+
+
+taskView : Task -> Card.Config Msg
+taskView task =
+    Card.config []
+        |> Card.block []
+            [ Block.titleH5 [] [ text task.name ]
+            , Block.link [ href "#" ] [ text "Перейти к задаче" ]
+            ]
 
 
 viewTaskList : Model -> Html Msg
 viewTaskList model =
-    div [] [ text "типо задачи" ]
+    div [] []
 
 
 showModal : Maybe String -> Html Msg
@@ -122,7 +163,8 @@ showModal maybeMessage =
 type Msg
     = GotSession Session
     | CloseModal
-    | GotTasks (Api.Response (List Task))
+    | GotTasks (Api.Response TaskList)
+    | PaginationMsg Int
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -141,10 +183,13 @@ update msg model =
             ( { model | message = Nothing }, Cmd.none )
 
         GotTasks (Ok tasks) ->
-            ( { model | tasks = tasks }, Cmd.none )
+            ( { model | tasks = tasks.tasks, pages = tasks.pages, name = tasks.name }, Cmd.none )
 
         GotTasks (Err err) ->
             ( { model | message = Just err.message }, Cmd.none )
+
+        PaginationMsg _ ->
+            ( model, Cmd.none )
 
 
 
@@ -157,7 +202,7 @@ subscriptions model =
 
 
 type alias Task =
-    { id : String
+    { id : Uuid
     , name : String
     }
 
@@ -165,13 +210,28 @@ type alias Task =
 taskDecoder : Decoder Task
 taskDecoder =
     D.map2 Task
-        (D.field "id" D.string)
+        (D.field "id" Uuid.decoder)
         (D.field "name" D.string)
 
 
-getCategories : String -> Cmd Msg
-getCategories id =
-    Api.get (Endpoint.listTasks id) Nothing GotTasks (D.list taskDecoder)
+type alias TaskList =
+    { pages : Int
+    , name : String
+    , tasks : List Task
+    }
+
+
+taskListDecoder : Decoder TaskList
+taskListDecoder =
+    D.map3 TaskList
+        (D.field "pages" D.int)
+        (D.field "name" D.string)
+        (D.field "tasks" (D.list taskDecoder))
+
+
+getTasks : Uuid -> Int -> Cmd Msg
+getTasks id page =
+    Api.get (Endpoint.listTasks id (page - 1)) Nothing GotTasks taskListDecoder
 
 
 

@@ -179,9 +179,10 @@ update msg model =
             )
 
         GotSession session ->
-            ( { model | session = session }
-            , Route.replaceUrl (Session.navKey session) Route.Root
-            )
+            Debug.log "!@#!@#!" <|
+                ( { model | session = session }
+                , Route.replaceUrl (Session.navKey session) Route.Root
+                )
 
         CloseModal ->
             ( { model | errorMessage = Nothing }, Cmd.none )

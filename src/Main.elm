@@ -1,12 +1,13 @@
 module Main exposing (main)
 
+-- import Debug exposing (..)
+
 import Api
 import Bootstrap.Dropdown as Dropdown
 import Bootstrap.Navbar as Navbar
 import Browser exposing (Document)
 import Browser.Navigation as Nav
 import Cred exposing (Cred)
-import Debug exposing (..)
 import Html exposing (..)
 import Json.Decode as Decode exposing (Value)
 import Page exposing (Page)
@@ -185,64 +186,67 @@ changeRouteTo maybeRoute model =
         Just Route.Logout ->
             ( model, Api.logout )
 
-        Just Route.Category ->
-            Category.init session
+        Just (Route.Category catId page) ->
+            -- case model.page of
+            --     Category cat ->
+            --         ( model, Cmd.none )
+            --     _ ->
+            Category.init session catId page
                 |> updateWith model Category CategoryMsg
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
-    Debug.log "!!" <|
-        case ( msg, model.page ) of
-            ( Ignored, _ ) ->
-                ( model, Cmd.none )
+    case ( msg, model.page ) of
+        ( Ignored, _ ) ->
+            ( model, Cmd.none )
 
-            ( ClickedLink urlRequest, _ ) ->
-                case urlRequest of
-                    Browser.Internal url ->
-                        ( model
-                        , Nav.pushUrl (Session.navKey (toSession model)) (Url.toString url)
-                        )
+        ( ClickedLink urlRequest, _ ) ->
+            case urlRequest of
+                Browser.Internal url ->
+                    ( model
+                    , Nav.pushUrl (Session.navKey (toSession model)) (Url.toString url)
+                    )
 
-                    Browser.External href ->
-                        ( model
-                        , Nav.load href
-                        )
+                Browser.External href ->
+                    ( model
+                    , Nav.load href
+                    )
 
-            ( ChangedUrl url, _ ) ->
-                changeRouteTo (Route.fromUrl url) model
+        ( ChangedUrl url, _ ) ->
+            changeRouteTo (Route.fromUrl url) model
 
-            ( ChangedRoute route, _ ) ->
-                changeRouteTo route model
+        ( ChangedRoute route, _ ) ->
+            changeRouteTo route model
 
-            ( RootMsg subMsg, Root home ) ->
-                Root.update subMsg home
-                    |> updateWith model Root RootMsg
+        ( RootMsg subMsg, Root home ) ->
+            Root.update subMsg home
+                |> updateWith model Root RootMsg
 
-            ( LoginMsg subMsg, Login login ) ->
-                Login.update subMsg login
-                    |> updateWith model Login LoginMsg
+        ( LoginMsg subMsg, Login login ) ->
+            Login.update subMsg login
+                |> updateWith model Login LoginMsg
 
-            ( RegisterMsg subMsg, Register register ) ->
-                Register.update subMsg register
-                    |> updateWith model Register RegisterMsg
+        ( RegisterMsg subMsg, Register register ) ->
+            Register.update subMsg register
+                |> updateWith model Register RegisterMsg
 
-            ( RegisterConfirmMsg subMsg, RegisterConfirm register ) ->
-                RegisterConfirm.update subMsg register
-                    |> updateWith model RegisterConfirm RegisterConfirmMsg
+        ( RegisterConfirmMsg subMsg, RegisterConfirm register ) ->
+            RegisterConfirm.update subMsg register
+                |> updateWith model RegisterConfirm RegisterConfirmMsg
 
-            ( CategoryMsg subMsg, Category category ) ->
-                Category.update subMsg category
-                    |> updateWith model Category CategoryMsg
+        ( CategoryMsg subMsg, Category category ) ->
+            Category.update subMsg category
+                |> updateWith model Category CategoryMsg
 
-            ( NavbarMsg state, _ ) ->
-                ( { model | navbar = state }, Cmd.none )
+        ( NavbarMsg state, _ ) ->
+            ( { model | navbar = state }, Cmd.none )
 
-            ( DropdownMsg state, _ ) ->
-                ( { model | userDropdown = state }, Cmd.none )
+        ( DropdownMsg state, _ ) ->
+            ( { model | userDropdown = state }, Cmd.none )
 
-            ( _, _ ) ->
-                ( model, Cmd.none )
+        ( _, _ ) ->
+            ( model, Cmd.none )
 
 
 updateWith : Model -> (subModel -> Page) -> (subMsg -> Msg) -> ( subModel, Cmd subMsg ) -> ( Model, Cmd Msg )

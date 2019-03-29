@@ -126,59 +126,57 @@ expectJson : (Response a -> msg) -> Decode.Decoder a -> Expect msg
 expectJson toMsg decoder =
     Http.expectStringResponse toMsg <|
         \response ->
-            Debug.log (Debug.toString response) <|
-                case response of
-                    Http.BadUrl_ url ->
-                        Err <| ErrorPayload "Bad url" "BadUrl"
+            case response of
+                Http.BadUrl_ url ->
+                    Err <| ErrorPayload "Bad url" "BadUrl"
 
-                    Http.Timeout_ ->
-                        Err <| ErrorPayload "Timeout" "Timeout"
+                Http.Timeout_ ->
+                    Err <| ErrorPayload "Timeout" "Timeout"
 
-                    Http.NetworkError_ ->
-                        Err <| ErrorPayload "Network error" "NetworkError"
+                Http.NetworkError_ ->
+                    Err <| ErrorPayload "Network error" "NetworkError"
 
-                    Http.BadStatus_ meta body ->
-                        case Decode.decodeString errorDecoder body of
-                            Ok value ->
-                                Err value
+                Http.BadStatus_ meta body ->
+                    case Decode.decodeString errorDecoder body of
+                        Ok value ->
+                            Err value
 
-                            Err err ->
-                                Err <| ErrorPayload "Bad response" "BadResponse"
+                        Err err ->
+                            Err <| ErrorPayload "Bad response" "BadResponse"
 
-                    Http.GoodStatus_ meta body ->
-                        case Decode.decodeString decoder body of
-                            Ok value ->
-                                Ok value
+                Http.GoodStatus_ meta body ->
+                    case Decode.decodeString decoder body of
+                        Ok value ->
+                            Ok value
 
-                            Err err ->
-                                Err <| ErrorPayload "Bad response" "BadResponse"
+                        Err err ->
+                            Err <| ErrorPayload "Bad response" "BadResponse"
 
 
 ignoreResponseBody : (Response () -> msg) -> Expect msg
 ignoreResponseBody toMsg =
     Http.expectStringResponse toMsg <|
         \response ->
-            Debug.log (Debug.toString response) <|
-                case response of
-                    Http.BadUrl_ url ->
-                        Err <| ErrorPayload "Bad url" "BadUrl"
+            case response of
+                Http.BadUrl_ url ->
+                    Err <| ErrorPayload "Bad url" "BadUrl"
 
-                    Http.Timeout_ ->
-                        Err <| ErrorPayload "Timeout" "Timeout"
+                Http.Timeout_ ->
+                    Err <| ErrorPayload "Timeout" "Timeout"
 
-                    Http.NetworkError_ ->
-                        Err <| ErrorPayload "Network error" "NetworkError"
+                Http.NetworkError_ ->
+                    Err <| ErrorPayload "Network error" "NetworkError"
 
-                    Http.BadStatus_ _ body ->
-                        case Decode.decodeString errorDecoder body of
-                            Ok value ->
-                                Err value
+                Http.BadStatus_ _ body ->
+                    case Decode.decodeString errorDecoder body of
+                        Ok value ->
+                            Err value
 
-                            Err err ->
-                                Err <| ErrorPayload "Bad status" "BadStatus"
+                        Err err ->
+                            Err <| ErrorPayload "Bad status" "BadStatus"
 
-                    Http.GoodStatus_ meta body ->
-                        Ok ()
+                Http.GoodStatus_ meta body ->
+                    Ok ()
 
 
 get :

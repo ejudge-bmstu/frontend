@@ -30,6 +30,7 @@ import Page.Category.Tasks as Tasks
 import Role
 import Route exposing (Route)
 import Session exposing (Session(..))
+import Uuid exposing (Uuid)
 import Viewer exposing (Viewer)
 
 
@@ -50,14 +51,25 @@ type alias Model =
     }
 
 
-init : Session -> ( Model, Cmd Msg )
-init session =
+init : Session -> Maybe Uuid -> Maybe Int -> ( Model, Cmd Msg )
+init session categoryId page =
     let
+        subpageInit =
+            Maybe.map (Tasks.init session page) categoryId
+
+        ( subpage, subCmd ) =
+            case subpageInit of
+                Just ( subpage_, subCmd_ ) ->
+                    ( Just (Tasks subpage_), subCmd_ )
+
+                Nothing ->
+                    ( Nothing, Cmd.none )
+
         model =
             { session = session
             , categories = []
             , message = Nothing
-            , subpage = Nothing
+            , subpage = subpage
             }
 
         role =
@@ -67,7 +79,7 @@ init session =
             Session.navKey session
     in
     if Role.hasUserAccess role then
-        ( model, getCategories )
+        ( model, Cmd.batch [ getCategories, Cmd.map TasksMsg subCmd ] )
 
     else
         ( model, Route.replaceUrl navKey Route.NotFound )
@@ -79,7 +91,7 @@ init session =
 
 view : Model -> { title : String, content : Html Msg }
 view model =
-    { title = "Добавление категории"
+    { title = "Задачи"
     , content =
         div [ Spacing.m1 ]
             [ Grid.container
@@ -144,7 +156,7 @@ viewSubpage model =
             Html.map AddMsg <| Add.view add
 
 
-viewCategoryItem : Maybe String -> Category -> ListGroup.CustomItem Msg
+viewCategoryItem : Maybe Uuid -> Category -> ListGroup.CustomItem Msg
 viewCategoryItem id category =
     ListGroup.button
         ([ ListGroup.attrs
@@ -200,7 +212,7 @@ type Msg
     = GotSession Session
     | CloseModal
     | GotCategories (Api.Response (List Category))
-    | ShowTasks String
+    | ShowTasks Uuid
     | TasksMsg Tasks.Msg
     | ShowAddTask
     | AddMsg Add.Msg
@@ -212,52 +224,61 @@ update msg model =
         cred =
             Session.cred model.session
     in
-    Debug.log "!" <|
-        case ( msg, model.subpage ) of
-            ( GotSession session, _ ) ->
-                ( { model | session = session }
-                , Route.replaceUrl (Session.navKey session) Route.Root
-                )
+    case ( msg, model.subpage ) of
+        ( GotSession session, _ ) ->
+            ( { model | session = session }
+            , Route.replaceUrl (Session.navKey session) Route.Root
+            )
 
-            ( CloseModal, _ ) ->
-                ( { model | message = Nothing }, Cmd.none )
+        ( CloseModal, _ ) ->
+            ( { model | message = Nothing }, Cmd.none )
 
-            ( GotCategories (Ok categories), _ ) ->
-                ( { model | categories = categories }, Cmd.none )
+        ( GotCategories (Ok categories), _ ) ->
+            ( { model | categories = categories }, Cmd.none )
 
-            ( GotCategories (Err err), _ ) ->
-                ( { model | message = Just err.message }, Cmd.none )
+        ( GotCategories (Err err), _ ) ->
+            ( { model | message = Just err.message }, Cmd.none )
 
-            ( ShowTasks id, _ ) ->
-                let
-                    ( subpage, cmd ) =
-                        Tasks.init model.session id
-                in
-                ( { model | subpage = Just <| Tasks subpage }, Cmd.map TasksMsg cmd )
+        ( ShowTasks id, _ ) ->
+            let
+                ( subpage, cmd ) =
+                    Tasks.init model.session Nothing id
+            in
+            ( { model | subpage = Just <| Tasks subpage }
+            , Cmd.batch
+                [ Cmd.map TasksMsg cmd
+                , Route.replaceUrl (Session.navKey model.session) <| Route.Category (Just id) Nothing
+                ]
+            )
 
-            ( TasksMsg tasksMsg, Just (Tasks tasks) ) ->
-                let
-                    ( subpage, cmd ) =
-                        Tasks.update tasksMsg tasks
-                in
-                ( { model | subpage = Just <| Tasks subpage }, Cmd.map TasksMsg cmd )
+        ( TasksMsg tasksMsg, Just (Tasks tasks) ) ->
+            let
+                ( subpage, cmd ) =
+                    Tasks.update tasksMsg tasks
+            in
+            ( { model | subpage = Just <| Tasks subpage }, Cmd.map TasksMsg cmd )
 
-            ( ShowAddTask, _ ) ->
-                let
-                    ( subpage, cmd ) =
-                        Add.init model.session
-                in
-                ( { model | subpage = Just <| Add subpage }, Cmd.map AddMsg cmd )
+        ( ShowAddTask, _ ) ->
+            let
+                ( subpage, cmd ) =
+                    Add.init model.session
+            in
+            ( { model | subpage = Just <| Add subpage }
+            , Cmd.batch
+                [ Cmd.map AddMsg cmd
+                , Route.replaceUrl (Session.navKey model.session) <| Route.Category Nothing Nothing
+                ]
+            )
 
-            ( AddMsg addMsg, Just (Add add) ) ->
-                let
-                    ( subpage, cmd ) =
-                        Add.update addMsg add
-                in
-                ( { model | subpage = Just <| Add subpage }, Cmd.map AddMsg cmd )
+        ( AddMsg addMsg, Just (Add add) ) ->
+            let
+                ( subpage, cmd ) =
+                    Add.update addMsg add
+            in
+            ( { model | subpage = Just <| Add subpage }, Cmd.map AddMsg cmd )
 
-            ( _, _ ) ->
-                ( model, Cmd.none )
+        ( _, _ ) ->
+            ( model, Cmd.none )
 
 
 
@@ -270,7 +291,7 @@ subscriptions model =
 
 
 type alias Category =
-    { id : String
+    { id : Uuid
     , name : String
     , count : Int
     }
@@ -279,7 +300,7 @@ type alias Category =
 categoryDecoder : Decoder Category
 categoryDecoder =
     D.map3 Category
-        (D.field "id" D.string)
+        (D.field "id" Uuid.decoder)
         (D.field "name" D.string)
         (D.field "count" D.int)
 

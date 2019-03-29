@@ -1,10 +1,11 @@
-module Route exposing (Route(..), fromUrl, href, replaceUrl)
+module Route exposing (Route(..), fromUrl, href, replaceUrl, routeToString)
 
 import Browser.Navigation as Nav
 import Html exposing (Attribute)
 import Html.Attributes as Attr
 import Url exposing (Url)
-import Url.Parser as Parser exposing ((</>), (<?>), Parser, oneOf, query, s, string, top)
+import Url.Builder as Builder
+import Url.Parser as Parser exposing ((</>), (<?>), Parser, int, oneOf, query, s, top)
 import Url.Parser.Query as Query exposing (int, string)
 import Uuid exposing (Uuid)
 
@@ -30,6 +31,15 @@ uuid name =
 
 parser : Parser (Route -> a) a
 parser =
+    let
+        catCons mid page =
+            case mid of
+                Just id ->
+                    Category mid (Just page)
+
+                Nothing ->
+                    Category Nothing Nothing
+    in
     oneOf
         [ Parser.map Root top
         , Parser.map NotFound (s "404")
@@ -66,28 +76,44 @@ fromUrl url =
 
 routeToString : Route -> String
 routeToString page =
-    let
-        pieces =
-            case page of
-                Root ->
-                    []
+    case page of
+        Root ->
+            Builder.relative [ "/" ] []
 
-                NotFound ->
-                    [ "404" ]
+        NotFound ->
+            Builder.relative [ "404" ] []
 
-                Login ->
-                    [ "login" ]
+        Login ->
+            Builder.relative [ "login" ] []
 
-                Logout ->
-                    [ "logout" ]
+        Logout ->
+            Builder.relative [ "logout" ] []
 
-                Register ->
-                    [ "register" ]
+        Register ->
+            Builder.relative [ "register" ] []
 
-                RegisterConfirm _ ->
-                    [ "register", "confirm" ]
+        RegisterConfirm _ ->
+            Builder.relative [ "register", "confirm" ] []
 
-                Category _ _ ->
-                    [ "category" ]
-    in
-    "/" ++ String.join "/" pieces
+        Category mId mPageNum ->
+            let
+                mQueries =
+                    catMaybes
+                        [ Maybe.map (Builder.string "id") (Maybe.map Uuid.toString mId)
+                        , Maybe.map (Builder.int "page") mPageNum
+                        ]
+            in
+            Builder.relative [ "category" ] mQueries
+
+
+catMaybes : List (Maybe a) -> List a
+catMaybes list =
+    case list of
+        [] ->
+            []
+
+        (Just x) :: xs ->
+            x :: catMaybes xs
+
+        Nothing :: xs ->
+            catMaybes xs
