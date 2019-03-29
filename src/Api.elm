@@ -1,9 +1,10 @@
-port module Api exposing (Response, application, delete, get, login, logout, post, postExpectEmpty, put, username, viewerChanges)
+port module Api exposing (Response, application, delete, get, login, logout, post, postExpectEmpty, put, viewerChanges)
 
 import Api.Endpoint as Endpoint exposing (Endpoint)
 import Browser
 import Browser.Navigation as Nav
 import Cred exposing (Cred(..))
+import Debug
 import Http exposing (Body, Expect)
 import Json.Decode as Decode exposing (Decoder, Value, decodeString, field, string)
 import Maybe
@@ -18,19 +19,9 @@ import Viewer exposing (Viewer)
 -- CRED
 
 
-username : Cred -> Username
-username (Cred val _ _) =
-    val
-
-
 credHeader : Cred -> Http.Header
 credHeader (Cred _ _ tokens) =
     Http.header "authorization" ("Bearer " ++ tokens.accessToken)
-
-
-role : Cred -> Role
-role (Cred _ val _) =
-    val
 
 
 

@@ -1,4 +1,4 @@
-module Cred exposing (Cred(..), credDecoder)
+module Cred exposing (Cred(..), credDecoder, role, username)
 
 import Json.Decode as Decode exposing (Decoder)
 import Json.Decode.Pipeline as Pipeline exposing (required)
@@ -14,6 +14,16 @@ import Username exposing (Username)
 
 type Cred
     = Cred Username Role Tokens
+
+
+username : Cred -> Username
+username (Cred val _ _) =
+    val
+
+
+role : Cred -> Role
+role (Cred _ val _) =
+    val
 
 
 credDecoder : Decoder Cred

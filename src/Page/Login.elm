@@ -124,14 +124,14 @@ viewForm form =
                 [ Input.id "myusername_auth"
                 , Input.placeholder "Логин"
                 , Input.onInput EnteredUsername
-                , Input.attrs [ minlength 6 ]
+                , Input.attrs [ minlength 6, required True ]
                 , Input.value form.username
                 ]
             , Input.password
                 [ Input.id "mypwd_auth"
                 , Input.onInput EnteredPassword
                 , Input.placeholder "Пароль"
-                , Input.attrs [ minlength 6 ]
+                , Input.attrs [ minlength 6, required True ]
                 , Input.value form.password
                 ]
             ]
@@ -179,9 +179,10 @@ update msg model =
             )
 
         GotSession session ->
-            ( { model | session = session }
-            , Route.replaceUrl (Session.navKey session) Route.Root
-            )
+            Debug.log "!@#!@#!" <|
+                ( { model | session = session }
+                , Route.replaceUrl (Session.navKey session) Route.Root
+                )
 
         CloseModal ->
             ( { model | errorMessage = Nothing }, Cmd.none )

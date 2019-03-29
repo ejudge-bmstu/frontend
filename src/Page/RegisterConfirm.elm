@@ -1,5 +1,7 @@
 module Page.RegisterConfirm exposing (Model, Msg(..), init, subscriptions, toSession, update, view)
 
+--import Debug
+
 import Api
 import Api.Endpoint as Endpoint
 import Bootstrap.Button as Button
@@ -14,7 +16,6 @@ import Bootstrap.Text as Text
 import Bootstrap.Utilities.Size as Size
 import Bootstrap.Utilities.Spacing as Spacing
 import Browser.Navigation as Nav
-import Debug
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
@@ -81,12 +82,10 @@ update msg model =
             )
 
         CompletedRegister (Ok _) ->
-            Debug.log "ok" <|
-                ( { model | message = "Учетная запись подтверждена, можете войти используя введенные данные." }, Cmd.none )
+            ( { model | message = "Учетная запись подтверждена, можете войти используя введенные данные." }, Cmd.none )
 
         CompletedRegister (Err error) ->
-            Debug.log "neok" <|
-                ( { model | message = error.message }, Cmd.none )
+            ( { model | message = error.message }, Cmd.none )
 
         CloseModal ->
             ( model, Route.replaceUrl (Session.navKey model.session) Route.Login )

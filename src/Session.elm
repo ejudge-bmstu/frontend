@@ -1,8 +1,9 @@
-module Session exposing (Session, changes, cred, fromViewer, navKey, viewer)
+module Session exposing (Session(..), changes, cred, fromViewer, navKey, role, viewer)
 
 import Api
 import Browser.Navigation as Nav
 import Cred exposing (Cred)
+import Role exposing (Role)
 import Viewer exposing (Viewer)
 
 
@@ -47,6 +48,16 @@ navKey session =
 
         Guest key ->
             key
+
+
+role : Session -> Role
+role session =
+    case session of
+        LoggedIn _ val ->
+            Cred.role << Viewer.cred <| val
+
+        Guest _ ->
+            Role.Guest
 
 
 

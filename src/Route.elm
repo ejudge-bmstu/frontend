@@ -1,11 +1,13 @@
-module Route exposing (Route(..), fromUrl, href, replaceUrl)
+module Route exposing (Route(..), fromUrl, href, replaceUrl, routeToString)
 
 import Browser.Navigation as Nav
 import Html exposing (Attribute)
 import Html.Attributes as Attr
 import Url exposing (Url)
-import Url.Parser as Parser exposing ((</>), (<?>), Parser, oneOf, query, s, string, top)
-import Url.Parser.Query as Query exposing (string)
+import Url.Builder as Builder
+import Url.Parser as Parser exposing ((</>), (<?>), Parser, int, oneOf, query, s, top)
+import Url.Parser.Query as Query exposing (int, string)
+import Uuid exposing (Uuid)
 
 
 
@@ -14,20 +16,38 @@ import Url.Parser.Query as Query exposing (string)
 
 type Route
     = Root
+    | NotFound
     | Login
     | Logout
     | Register
     | RegisterConfirm (Maybe String)
+    | Category (Maybe Uuid) (Maybe Int)
+
+
+uuid : String -> Query.Parser (Maybe Uuid)
+uuid name =
+    Query.map (Uuid.fromString << Maybe.withDefault "") (string name)
 
 
 parser : Parser (Route -> a) a
 parser =
+    let
+        catCons mid page =
+            case mid of
+                Just id ->
+                    Category mid (Just page)
+
+                Nothing ->
+                    Category Nothing Nothing
+    in
     oneOf
         [ Parser.map Root top
+        , Parser.map NotFound (s "404")
         , Parser.map Login (s "login")
         , Parser.map Logout (s "logout")
         , Parser.map Register (s "register")
         , Parser.map RegisterConfirm (s "register" </> s "confirm" <?> string "token")
+        , Parser.map Category (s "category" <?> uuid "id" <?> int "page")
         ]
 
 
@@ -56,22 +76,44 @@ fromUrl url =
 
 routeToString : Route -> String
 routeToString page =
-    let
-        pieces =
-            case page of
-                Root ->
-                    []
+    case page of
+        Root ->
+            Builder.relative [ "/" ] []
 
-                Login ->
-                    [ "login" ]
+        NotFound ->
+            Builder.relative [ "404" ] []
 
-                Logout ->
-                    [ "logout" ]
+        Login ->
+            Builder.relative [ "login" ] []
 
-                Register ->
-                    [ "register" ]
+        Logout ->
+            Builder.relative [ "logout" ] []
 
-                RegisterConfirm _ ->
-                    [ "register", "confirm" ]
-    in
-    "/" ++ String.join "/" pieces
+        Register ->
+            Builder.relative [ "register" ] []
+
+        RegisterConfirm _ ->
+            Builder.relative [ "register", "confirm" ] []
+
+        Category mId mPageNum ->
+            let
+                mQueries =
+                    catMaybes
+                        [ Maybe.map (Builder.string "id") (Maybe.map Uuid.toString mId)
+                        , Maybe.map (Builder.int "page") mPageNum
+                        ]
+            in
+            Builder.relative [ "category" ] mQueries
+
+
+catMaybes : List (Maybe a) -> List a
+catMaybes list =
+    case list of
+        [] ->
+            []
+
+        (Just x) :: xs ->
+            x :: catMaybes xs
+
+        Nothing :: xs ->
+            catMaybes xs

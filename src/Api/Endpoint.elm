@@ -1,7 +1,8 @@
-module Api.Endpoint exposing (Endpoint, login, register, registerComplete, request)
+module Api.Endpoint exposing (Endpoint, addCategory, deleteCategory, editCategory, listCategories, listTasks, login, register, registerComplete, request)
 
 import Http
-import Url.Builder exposing (QueryParameter)
+import Url.Builder exposing (QueryParameter, int)
+import Uuid exposing (Uuid, toString)
 
 
 request :
@@ -65,3 +66,28 @@ register =
 registerComplete : Endpoint
 registerComplete =
     url [ "register", "confirm" ] []
+
+
+addCategory : Endpoint
+addCategory =
+    url [ "category", "add" ] []
+
+
+listCategories : Endpoint
+listCategories =
+    url [ "category", "list" ] []
+
+
+deleteCategory : Endpoint
+deleteCategory =
+    url [ "category", "delete" ] []
+
+
+editCategory : Endpoint
+editCategory =
+    url [ "category", "edit" ] []
+
+
+listTasks : Uuid -> Int -> Endpoint
+listTasks id page =
+    url [ "categories", toString id, "tasks" ] [ int "page" page ]

@@ -146,20 +146,21 @@ viewForm form =
                 [ Input.id "myusername_auth"
                 , Input.placeholder "Логин"
                 , Input.onInput EnteredUsername
-                , Input.attrs [ minlength 6 ]
+                , Input.attrs [ minlength 6, required True ]
                 , Input.value form.username
                 ]
             , Input.email
                 [ Input.id "mypwd_email"
                 , Input.onInput EnteredEmail
                 , Input.placeholder "Email"
+                , Input.attrs [ required True ]
                 , Input.value form.email
                 ]
             , Input.password
                 [ Input.id "mypwd_auth"
                 , Input.onInput EnteredPassword
                 , Input.placeholder "Пароль"
-                , Input.attrs [ minlength 6 ]
+                , Input.attrs [ minlength 6, required True ]
                 , Input.value form.password
                 ]
             ]
