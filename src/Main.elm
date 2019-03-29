@@ -17,6 +17,7 @@ import Page.NotFound as NotFound
 import Page.Register as Register
 import Page.RegisterConfirm as RegisterConfirm
 import Page.Root as Root
+import Page.Task as Task
 import Route exposing (Route)
 import Session exposing (Session(..))
 import Url exposing (Url)
@@ -38,6 +39,7 @@ type Page
     | Register Register.Model
     | RegisterConfirm RegisterConfirm.Model
     | Category Category.Model
+    | Task Task.Model
 
 
 
@@ -109,6 +111,9 @@ view model =
         Category category ->
             viewPage Page.Category CategoryMsg (Category.view category) True
 
+        Task task ->
+            viewPage Page.Task TaskMsg (Task.view task) True
+
 
 
 -- UPDATE
@@ -126,6 +131,7 @@ type Msg
     | CategoryMsg Category.Msg
     | NavbarMsg Navbar.State
     | DropdownMsg Dropdown.State
+    | TaskMsg Task.Msg
 
 
 toSession : Model -> Session
@@ -151,6 +157,9 @@ toSession model =
 
         Category category ->
             Category.toSession category
+
+        Task task ->
+            Task.toSession task
 
 
 changeRouteTo : Maybe Route -> Model -> ( Model, Cmd Msg )
@@ -192,6 +201,10 @@ changeRouteTo maybeRoute model =
             -- _ ->
             Category.init session catId page
                 |> updateWith model Category CategoryMsg
+
+        Just (Route.Task id) ->
+            Task.init id session
+                |> updateWith model Task TaskMsg
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -237,6 +250,10 @@ update msg model =
         ( CategoryMsg subMsg, Category category ) ->
             Category.update subMsg category
                 |> updateWith model Category CategoryMsg
+
+        ( TaskMsg subMsg, Task task ) ->
+            Task.update subMsg task
+                |> updateWith model Task TaskMsg
 
         ( NavbarMsg state, _ ) ->
             ( { model | navbar = state }, Cmd.none )
@@ -286,6 +303,9 @@ subscriptions model =
 
                 Category category ->
                     Sub.map CategoryMsg (Category.subscriptions category)
+
+                Task task ->
+                    Sub.map TaskMsg (Task.subscriptions task)
     in
     Sub.batch
         [ Dropdown.subscriptions model.userDropdown DropdownMsg

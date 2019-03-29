@@ -61,7 +61,12 @@ view model =
         [ Form.form []
             [ h4 [] [ text "Добавление категории" ]
             , Form.group []
-                [ Input.text [ Input.attrs [ placeholder "Название категории", required True ], Input.onInput EnteredCategory ] ]
+                [ Input.text
+                    [ Input.attrs [ placeholder "Название категории", required True ]
+                    , Input.onInput EnteredCategory
+                    , Input.value model.category
+                    ]
+                ]
             , Button.button [ Button.primary, Button.onClick SubmittedForm ] [ text "Добавить" ]
             ]
         , showModal model.message
@@ -158,7 +163,7 @@ sendCategory cred category =
     let
         body =
             Encode.object
-                [ ( "category", Encode.string category )
+                [ ( "name", Encode.string category )
                 ]
                 |> Http.jsonBody
     in

@@ -5,7 +5,7 @@ import Html exposing (Attribute)
 import Html.Attributes as Attr
 import Url exposing (Url)
 import Url.Builder as Builder
-import Url.Parser as Parser exposing ((</>), (<?>), Parser, int, oneOf, s, top)
+import Url.Parser as Parser exposing ((</>), (<?>), Parser, int, oneOf, s, string, top)
 import Url.Parser.Query as Query exposing (int, string)
 import Uuid exposing (Uuid)
 
@@ -22,11 +22,17 @@ type Route
     | Register
     | RegisterConfirm (Maybe String)
     | Category (Maybe Uuid) (Maybe Int)
+    | Task Uuid
 
 
-uuid : String -> Query.Parser (Maybe Uuid)
-uuid name =
+quuid : String -> Query.Parser (Maybe Uuid)
+quuid name =
     Query.map (Uuid.fromString << Maybe.withDefault "") (string name)
+
+
+uuuid : Parser.Parser (Maybe Uuid -> a) a
+uuuid =
+    Parser.map Uuid.fromString Parser.string
 
 
 parser : Parser (Route -> a) a
@@ -39,6 +45,14 @@ parser =
 
                 Nothing ->
                     Category Nothing Nothing
+
+        mkTaskRoute x =
+            case x of
+                Just y ->
+                    Task y
+
+                Nothing ->
+                    NotFound
     in
     oneOf
         [ Parser.map Root top
@@ -47,7 +61,8 @@ parser =
         , Parser.map Logout (s "logout")
         , Parser.map Register (s "register")
         , Parser.map RegisterConfirm (s "register" </> s "confirm" <?> string "token")
-        , Parser.map Category (s "category" <?> uuid "id" <?> int "page")
+        , Parser.map Category (s "category" <?> quuid "id" <?> int "page")
+        , Parser.map mkTaskRoute (s "task" </> uuuid)
         ]
 
 
@@ -104,6 +119,9 @@ routeToString page =
                         ]
             in
             Builder.relative [ "category" ] mQueries
+
+        Task id ->
+            Builder.relative [ "task", Uuid.toString id ] []
 
 
 catMaybes : List (Maybe a) -> List a

@@ -1,4 +1,16 @@
-module Api.Endpoint exposing (Endpoint, addCategory, deleteCategory, editCategory, listCategories, listTasks, login, register, registerComplete, request)
+module Api.Endpoint exposing
+    ( Endpoint
+    , addCategory
+    , deleteCategory
+    , editCategory
+    , getTask
+    , listCategories
+    , listTasks
+    , login
+    , register
+    , registerComplete
+    , request
+    )
 
 import Http
 import Url.Builder exposing (QueryParameter, int)
@@ -91,3 +103,8 @@ editCategory =
 listTasks : Uuid -> Int -> Endpoint
 listTasks id page =
     url [ "categories", toString id, "tasks" ] [ int "page" page ]
+
+
+getTask : Uuid -> Endpoint
+getTask id =
+    url [ "task", Uuid.toString id ] []

@@ -11,6 +11,7 @@ import Bootstrap.Modal as Modal
 import Bootstrap.Utilities.Flex as Flex
 import Bootstrap.Utilities.Size as Size
 import Bootstrap.Utilities.Spacing as Spacing
+import Cred exposing (Cred)
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
@@ -69,7 +70,12 @@ init session categoryId page =
             Session.navKey session
     in
     if Role.hasUserAccess role then
-        ( model, Cmd.batch [ getCategories, Cmd.map TasksMsg subCmd ] )
+        ( model
+        , Cmd.batch
+            [ getCategories <| Session.cred session
+            , Cmd.map TasksMsg subCmd
+            ]
+        )
 
     else
         ( model, Route.replaceUrl navKey Route.NotFound )
@@ -259,6 +265,21 @@ update msg model =
                 ]
             )
 
+        ( AddMsg (Add.Added (Ok cat)), Just (Add add) ) ->
+            let
+                addMsg =
+                    Add.Added (Ok cat)
+
+                ( subpage, cmd ) =
+                    Add.update addMsg add
+            in
+            ( { model | subpage = Just <| Add subpage }
+            , Cmd.batch
+                [ getCategories <| Session.cred model.session
+                , Cmd.map AddMsg cmd
+                ]
+            )
+
         ( AddMsg addMsg, Just (Add add) ) ->
             let
                 ( subpage, cmd ) =
@@ -299,9 +320,9 @@ categoriesDecoder =
     D.field "categories" (D.list categoryDecoder)
 
 
-getCategories : Cmd Msg
-getCategories =
-    Api.get Endpoint.listCategories Nothing GotCategories categoriesDecoder
+getCategories : Maybe Cred -> Cmd Msg
+getCategories cred =
+    Api.get Endpoint.listCategories cred GotCategories categoriesDecoder
 
 
 
