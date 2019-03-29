@@ -1,19 +1,16 @@
 module Page exposing (Page(..), Settings, view, viewWithoutHeader)
 
-import Api
 import Bootstrap.Button as Button
 import Bootstrap.Dropdown as Dropdown
-import Bootstrap.Form as Form
-import Bootstrap.Grid as Grid
 import Bootstrap.Navbar as Navbar
 import Bootstrap.Utilities.Spacing as Spacing
 import Browser exposing (Document)
-import Cred exposing (Cred)
+import Cred
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
 import Role exposing (Role(..))
-import Route exposing (Route)
+import Route
 import Username
 import Viewer exposing (Viewer)
 

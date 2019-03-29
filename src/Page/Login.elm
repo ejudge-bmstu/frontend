@@ -8,16 +8,14 @@ import Bootstrap.Grid as Grid
 import Bootstrap.Grid.Col as Col
 import Bootstrap.Grid.Row as Row
 import Bootstrap.Modal as Modal
-import Bootstrap.Navbar as Navbar
 import Bootstrap.Text as Text
 import Bootstrap.Utilities.Size as Size
-import Browser.Navigation as Nav
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
 import Http
 import Json.Encode as Encode
-import Route exposing (Route)
+import Route
 import Session exposing (Session)
 import Viewer exposing (Viewer)
 

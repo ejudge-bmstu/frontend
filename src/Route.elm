@@ -5,7 +5,7 @@ import Html exposing (Attribute)
 import Html.Attributes as Attr
 import Url exposing (Url)
 import Url.Builder as Builder
-import Url.Parser as Parser exposing ((</>), (<?>), Parser, int, oneOf, query, s, top)
+import Url.Parser as Parser exposing ((</>), (<?>), Parser, int, oneOf, s, top)
 import Url.Parser.Query as Query exposing (int, string)
 import Uuid exposing (Uuid)
 

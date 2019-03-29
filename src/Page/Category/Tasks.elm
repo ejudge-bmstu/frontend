@@ -2,34 +2,19 @@ module Page.Category.Tasks exposing (Model, Msg(..), init, subscriptions, toSess
 
 import Api
 import Api.Endpoint as Endpoint
-import Bootstrap.Badge as Badge
 import Bootstrap.Button as Button
 import Bootstrap.Card as Card
 import Bootstrap.Card.Block as Block
-import Bootstrap.Form as Form
-import Bootstrap.Form.Input as Input
-import Bootstrap.Grid as Grid
-import Bootstrap.Grid.Col as Col
-import Bootstrap.Grid.Row as Row
-import Bootstrap.ListGroup as ListGroup
 import Bootstrap.Modal as Modal
-import Bootstrap.Navbar as Navbar
 import Bootstrap.Pagination as Pagination
-import Bootstrap.Text as Text
-import Bootstrap.Utilities.Flex as Flex
-import Bootstrap.Utilities.Size as Size
 import Bootstrap.Utilities.Spacing as Spacing
-import Browser.Navigation as Nav
-import Cred exposing (Cred)
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
-import Http
 import Json.Decode as D exposing (Decoder)
-import Json.Encode as E exposing (Value)
 import List.Extra as List
 import Role
-import Route exposing (Route)
+import Route
 import Session exposing (Session(..))
 import Uuid exposing (Uuid)
 import Viewer exposing (Viewer)

@@ -7,7 +7,6 @@ import Bootstrap.Dropdown as Dropdown
 import Bootstrap.Navbar as Navbar
 import Browser exposing (Document)
 import Browser.Navigation as Nav
-import Cred exposing (Cred)
 import Html exposing (..)
 import Json.Decode as Decode exposing (Value)
 import Page exposing (Page)
@@ -188,9 +187,9 @@ changeRouteTo maybeRoute model =
 
         Just (Route.Category catId page) ->
             -- case model.page of
-            --     Category cat ->
-            --         ( model, Cmd.none )
-            --     _ ->
+            -- Category cat ->
+            --     ( model, Cmd.none )
+            -- _ ->
             Category.init session catId page
                 |> updateWith model Category CategoryMsg
 

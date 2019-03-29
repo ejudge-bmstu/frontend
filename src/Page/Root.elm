@@ -1,7 +1,5 @@
 module Page.Root exposing (Model, Msg(..), init, subscriptions, toSession, update, view)
 
-import Bootstrap.Navbar as Navbar
-import Debug
 import Html exposing (Html)
 import Route
 import Session exposing (Session)
