@@ -1,4 +1,12 @@
-module Page.AddTask exposing (Model, Msg(..), init, subscriptions, toSession, update, view)
+module Page.AddTask exposing
+    ( Model
+    , Msg(..)
+    , init
+    , subscriptions
+    , toSession
+    , update
+    , view
+    )
 
 import Api
 import Api.Endpoint as Endpoint
@@ -209,21 +217,34 @@ viewForm model =
             [ Form.row []
                 [ Form.colLabel [ Col.sm2 ] [ text "Название задачи" ]
                 , Form.col [ Col.sm10 ]
-                    [ Input.text [ Input.attrs [ required True, minlength 1 ], Input.value task.name, Input.onInput NameEntered ] ]
+                    [ Input.text
+                        [ Input.attrs [ required True, minlength 1 ]
+                        , Input.value task.name
+                        , Input.onInput NameEntered
+                        ]
+                    ]
                 ]
             , Form.row []
                 [ Form.colLabel [ Col.sm2 ] [ text "Описание" ]
                 , Form.col [ Col.sm10 ]
-                    [ Textarea.textarea [ Textarea.value task.description, Textarea.onInput DescriptionEntered ] ]
+                    [ Textarea.textarea
+                        [ Textarea.value task.description
+                        , Textarea.onInput DescriptionEntered
+                        ]
+                    ]
                 ]
             , Form.row []
                 [ Form.colLabel [ Col.sm2 ] [ text "Категория" ]
                 , Form.col [ Col.sm4 ]
-                    [ Select.select ([ Select.onChange CategorySelected ] ++ selectedCategoryId) <|
+                    [ Select.select
+                        ([ Select.onChange CategorySelected ] ++ selectedCategoryId)
+                      <|
                         [ Select.item [] [ text "" ] ]
                             ++ List.map
                                 (\cat ->
-                                    Select.item [ value <| Uuid.toString cat.id ] [ text cat.name ]
+                                    Select.item
+                                        [ value <| Uuid.toString cat.id ]
+                                        [ text cat.name ]
                                 )
                                 model.categories
                     ]
@@ -231,10 +252,16 @@ viewForm model =
             , Form.row []
                 [ Form.colLabel [ Col.sm2 ] [ text "Доступ к отчету" ]
                 , Form.col [ Col.sm4 ]
-                    [ Select.select ([ Select.onChange ReportAccessSelected ] ++ selectedAccessId) <|
+                    [ Select.select
+                        ([ Select.onChange ReportAccessSelected ] ++ selectedAccessId)
+                      <|
                         [ Select.item [] [ text "" ]
-                        , Select.item [ value <| reportAccessToString FullAccess ] [ text <| reportAccessPrettyPrint FullAccess ]
-                        , Select.item [ value <| reportAccessToString NoAccess ] [ text <| reportAccessPrettyPrint NoAccess ]
+                        , Select.item
+                            [ value <| reportAccessToString FullAccess ]
+                            [ text <| reportAccessPrettyPrint FullAccess ]
+                        , Select.item
+                            [ value <| reportAccessToString NoAccess ]
+                            [ text <| reportAccessPrettyPrint NoAccess ]
                         ]
                     ]
                 ]
@@ -245,33 +272,63 @@ viewForm model =
             , Form.row []
                 [ Form.colLabel [ Col.sm2 ] [ text "Python" ]
                 , Form.col [ Col.sm2 ]
-                    [ Input.number [ Input.value <| String.fromInt task.pythonLimits.time, Input.onInput <| LimitEneterd Python Time ] ]
+                    [ Input.number
+                        [ Input.value <| String.fromInt task.pythonLimits.time
+                        , Input.onInput <| LimitEneterd Python Time
+                        ]
+                    ]
                 , Form.col [ Col.sm2 ]
-                    [ Input.number [ Input.value <| String.fromInt task.pythonLimits.memory, Input.onInput <| LimitEneterd Python Memory ] ]
+                    [ Input.number
+                        [ Input.value <| String.fromInt task.pythonLimits.memory
+                        , Input.onInput <| LimitEneterd Python Memory
+                        ]
+                    ]
                 ]
             , Form.row []
                 [ Form.colLabel [ Col.sm2 ] [ text "C" ]
                 , Form.col [ Col.sm2 ]
-                    [ Input.number [ Input.value <| String.fromInt task.cLimits.time, Input.onInput <| LimitEneterd C Time ] ]
+                    [ Input.number
+                        [ Input.value <| String.fromInt task.cLimits.time
+                        , Input.onInput <| LimitEneterd C Time
+                        ]
+                    ]
                 , Form.col [ Col.sm2 ]
-                    [ Input.number [ Input.value <| String.fromInt task.cLimits.memory, Input.onInput <| LimitEneterd C Memory ] ]
+                    [ Input.number
+                        [ Input.value <| String.fromInt task.cLimits.memory
+                        , Input.onInput <| LimitEneterd C Memory
+                        ]
+                    ]
                 ]
             , Form.row []
                 [ Form.colLabel [ Col.sm2 ] [ text "C++" ]
                 , Form.col [ Col.sm2 ]
-                    [ Input.number [ Input.value <| String.fromInt task.cppLimits.time, Input.onInput <| LimitEneterd Cpp Time ] ]
+                    [ Input.number
+                        [ Input.value <| String.fromInt task.cppLimits.time
+                        , Input.onInput <| LimitEneterd Cpp Time
+                        ]
+                    ]
                 , Form.col [ Col.sm2 ]
-                    [ Input.number [ Input.value <| String.fromInt task.cppLimits.memory, Input.onInput <| LimitEneterd Cpp Memory ] ]
+                    [ Input.number
+                        [ Input.value <| String.fromInt task.cppLimits.memory
+                        , Input.onInput <| LimitEneterd Cpp Memory
+                        ]
+                    ]
                 ]
             , Form.row []
                 [ Form.colLabel [ Col.sm2 ] [ text "Тесты" ]
                 , Form.col [ Col.sm2 ]
-                    [ Button.button [ Button.primary, Button.onClick TestsEntered ] [ text buttonFiles ] ]
+                    [ Button.button
+                        [ Button.primary, Button.onClick TestsEntered ]
+                        [ text buttonFiles ]
+                    ]
                 ]
             , Form.row [ Row.rightSm ]
                 [ Form.col [ Col.sm2 ]
                     [ Button.button
-                        [ Button.primary, Button.attrs [ class "float-right" ], Button.onClick SendTask ]
+                        [ Button.primary
+                        , Button.attrs [ class "float-right" ]
+                        , Button.onClick SendTask
+                        ]
                         [ text "Отправить" ]
                     ]
                 ]
@@ -366,46 +423,53 @@ update msg model =
             updateForm (\task -> { task | access = reportAccessFromString val }) model
 
         LimitEneterd language limitType val ->
+            let
+                limitMemoryUpdate limit =
+                    { limit | memory = Maybe.withDefault 0 <| String.toInt val }
+
+                limitTimeUpdate limit =
+                    { limit | time = Maybe.withDefault 0 <| String.toInt val }
+            in
             case ( language, limitType ) of
                 ( Python, Memory ) ->
                     let
                         limits =
-                            (\limit -> { limit | memory = Maybe.withDefault 0 <| String.toInt val }) model.task.pythonLimits
+                            limitMemoryUpdate model.task.pythonLimits
                     in
                     updateForm (\task -> { task | pythonLimits = limits }) model
 
                 ( Python, Time ) ->
                     let
                         limits =
-                            (\limit -> { limit | time = Maybe.withDefault 0 <| String.toInt val }) model.task.pythonLimits
+                            limitMemoryUpdate model.task.pythonLimits
                     in
                     updateForm (\task -> { task | pythonLimits = limits }) model
 
                 ( C, Memory ) ->
                     let
                         limits =
-                            (\limit -> { limit | memory = Maybe.withDefault 0 <| String.toInt val }) model.task.cLimits
+                            limitMemoryUpdate model.task.cLimits
                     in
                     updateForm (\task -> { task | cLimits = limits }) model
 
                 ( C, Time ) ->
                     let
                         limits =
-                            (\limit -> { limit | time = Maybe.withDefault 0 <| String.toInt val }) model.task.cLimits
+                            limitMemoryUpdate model.task.cLimits
                     in
                     updateForm (\task -> { task | cLimits = limits }) model
 
                 ( Cpp, Memory ) ->
                     let
                         limits =
-                            (\limit -> { limit | memory = Maybe.withDefault 0 <| String.toInt val }) model.task.cppLimits
+                            limitMemoryUpdate model.task.cppLimits
                     in
                     updateForm (\task -> { task | cppLimits = limits }) model
 
                 ( Cpp, Time ) ->
                     let
                         limits =
-                            (\limit -> { limit | time = Maybe.withDefault 0 <| String.toInt val }) model.task.cppLimits
+                            limitTimeUpdate model.task.cppLimits
                     in
                     updateForm (\task -> { task | cppLimits = limits }) model
 

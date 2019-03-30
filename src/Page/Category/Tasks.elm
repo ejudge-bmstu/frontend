@@ -1,4 +1,12 @@
-module Page.Category.Tasks exposing (Model, Msg(..), init, subscriptions, toSession, update, view)
+module Page.Category.Tasks exposing
+    ( Model
+    , Msg(..)
+    , init
+    , subscriptions
+    , toSession
+    , update
+    , view
+    )
 
 import Api
 import Api.Endpoint as Endpoint

@@ -1,4 +1,12 @@
-module Page.Login exposing (Model, Msg(..), init, subscriptions, toSession, update, view)
+module Page.Login exposing
+    ( Model
+    , Msg(..)
+    , init
+    , subscriptions
+    , toSession
+    , update
+    , view
+    )
 
 import Api
 import Bootstrap.Button as Button

@@ -1,4 +1,12 @@
-module Page.RegisterConfirm exposing (Model, Msg(..), init, subscriptions, toSession, update, view)
+module Page.RegisterConfirm exposing
+    ( Model
+    , Msg(..)
+    , init
+    , subscriptions
+    , toSession
+    , update
+    , view
+    )
 
 --import Debug
 

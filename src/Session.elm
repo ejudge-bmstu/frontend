@@ -1,4 +1,12 @@
-module Session exposing (Session(..), changes, cred, fromViewer, navKey, role, viewer)
+module Session exposing
+    ( Session(..)
+    , changes
+    , cred
+    , fromViewer
+    , navKey
+    , role
+    , viewer
+    )
 
 import Api
 import Browser.Navigation as Nav

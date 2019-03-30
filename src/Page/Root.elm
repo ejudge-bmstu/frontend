@@ -1,4 +1,12 @@
-module Page.Root exposing (Model, Msg(..), init, subscriptions, toSession, update, view)
+module Page.Root exposing
+    ( Model
+    , Msg(..)
+    , init
+    , subscriptions
+    , toSession
+    , update
+    , view
+    )
 
 import Html exposing (Html)
 import Route
