@@ -176,7 +176,7 @@ init session =
         navKey =
             Session.navKey session
     in
-    if Role.hasUserAccess role then
+    if Role.hasAdminAccess role then
         ( model, getCategories (Session.cred session) )
 
     else
