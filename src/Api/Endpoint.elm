@@ -1,6 +1,7 @@
 module Api.Endpoint exposing
     ( Endpoint
     , addCategory
+    , addTask
     , deleteCategory
     , editCategory
     , getTask
@@ -108,3 +109,8 @@ listTasks id page =
 getTask : Uuid -> Endpoint
 getTask id =
     url [ "task", Uuid.toString id ] []
+
+
+addTask : Endpoint
+addTask =
+    url [ "task", "add" ] []
