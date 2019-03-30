@@ -32,6 +32,7 @@ import Html.Events exposing (..)
 import Http
 import Json.Decode as D exposing (Decoder)
 import List.Extra as List
+import Role
 import Route
 import Session exposing (Session)
 import Uuid exposing (Uuid)
@@ -152,22 +153,34 @@ categoryDecoder =
 
 init : Session -> ( Model, Cmd Msg )
 init session =
-    ( { session = session
-      , categories = []
-      , errorMessage = Nothing
-      , task =
-            { name = ""
-            , description = ""
-            , category = Nothing
-            , access = Nothing
-            , pythonLimits = { memory = 0, time = 0 }
-            , cLimits = { memory = 0, time = 0 }
-            , cppLimits = { memory = 0, time = 0 }
-            , tests = Nothing
+    let
+        model =
+            { session = session
+            , categories = []
+            , errorMessage = Nothing
+            , task =
+                { name = ""
+                , description = ""
+                , category = Nothing
+                , access = Nothing
+                , pythonLimits = { memory = 0, time = 0 }
+                , cLimits = { memory = 0, time = 0 }
+                , cppLimits = { memory = 0, time = 0 }
+                , tests = Nothing
+                }
             }
-      }
-    , getCategories (Session.cred session)
-    )
+
+        role =
+            Session.role session
+
+        navKey =
+            Session.navKey session
+    in
+    if Role.hasUserAccess role then
+        ( model, getCategories (Session.cred session) )
+
+    else
+        ( model, Route.replaceUrl navKey Route.NotFound )
 
 
 
@@ -441,7 +454,7 @@ update msg model =
                 ( Python, Time ) ->
                     let
                         limits =
-                            limitMemoryUpdate model.task.pythonLimits
+                            limitTimeUpdate model.task.pythonLimits
                     in
                     updateForm (\task -> { task | pythonLimits = limits }) model
 
@@ -455,7 +468,7 @@ update msg model =
                 ( C, Time ) ->
                     let
                         limits =
-                            limitMemoryUpdate model.task.cLimits
+                            limitTimeUpdate model.task.cLimits
                     in
                     updateForm (\task -> { task | cLimits = limits }) model
 
