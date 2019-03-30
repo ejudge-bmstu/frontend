@@ -10,6 +10,7 @@ import Browser.Navigation as Nav
 import Html exposing (..)
 import Json.Decode as Decode exposing (Value)
 import Page exposing (Page)
+import Page.AddTask as AddTask
 import Page.Blank as Blank
 import Page.Category as Category
 import Page.Login as Login
@@ -40,6 +41,7 @@ type Page
     | RegisterConfirm RegisterConfirm.Model
     | Category Category.Model
     | Task Task.Model
+    | AddTask AddTask.Model
 
 
 
@@ -114,6 +116,9 @@ view model =
         Task task ->
             viewPage Page.Task TaskMsg (Task.view task) True
 
+        AddTask task ->
+            viewPage Page.AddTask AddTaskMsg (AddTask.view task) True
+
 
 
 -- UPDATE
@@ -132,6 +137,7 @@ type Msg
     | NavbarMsg Navbar.State
     | DropdownMsg Dropdown.State
     | TaskMsg Task.Msg
+    | AddTaskMsg AddTask.Msg
 
 
 toSession : Model -> Session
@@ -160,6 +166,9 @@ toSession model =
 
         Task task ->
             Task.toSession task
+
+        AddTask task ->
+            AddTask.toSession task
 
 
 changeRouteTo : Maybe Route -> Model -> ( Model, Cmd Msg )
@@ -205,6 +214,10 @@ changeRouteTo maybeRoute model =
         Just (Route.Task id) ->
             Task.init id session
                 |> updateWith model Task TaskMsg
+
+        Just Route.AddTask ->
+            AddTask.init session
+                |> updateWith model AddTask AddTaskMsg
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -254,6 +267,10 @@ update msg model =
         ( TaskMsg subMsg, Task task ) ->
             Task.update subMsg task
                 |> updateWith model Task TaskMsg
+
+        ( AddTaskMsg subMsg, AddTask task ) ->
+            AddTask.update subMsg task
+                |> updateWith model AddTask AddTaskMsg
 
         ( NavbarMsg state, _ ) ->
             ( { model | navbar = state }, Cmd.none )
@@ -306,6 +323,9 @@ subscriptions model =
 
                 Task task ->
                     Sub.map TaskMsg (Task.subscriptions task)
+
+                AddTask task ->
+                    Sub.map AddTaskMsg (AddTask.subscriptions task)
     in
     Sub.batch
         [ Dropdown.subscriptions model.userDropdown DropdownMsg

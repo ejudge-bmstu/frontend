@@ -1,4 +1,12 @@
-module Page.Register exposing (Model, Msg(..), init, subscriptions, toSession, update, view)
+module Page.Register exposing
+    ( Model
+    , Msg(..)
+    , init
+    , subscriptions
+    , toSession
+    , update
+    , view
+    )
 
 import Api
 import Api.Endpoint as Endpoint

@@ -1,4 +1,10 @@
-module Route exposing (Route(..), fromUrl, href, replaceUrl, routeToString)
+module Route exposing
+    ( Route(..)
+    , fromUrl
+    , href
+    , replaceUrl
+    , routeToString
+    )
 
 import Browser.Navigation as Nav
 import Html exposing (Attribute)
@@ -23,6 +29,7 @@ type Route
     | RegisterConfirm (Maybe String)
     | Category (Maybe Uuid) (Maybe Int)
     | Task Uuid
+    | AddTask
 
 
 quuid : String -> Query.Parser (Maybe Uuid)
@@ -62,6 +69,7 @@ parser =
         , Parser.map Register (s "register")
         , Parser.map RegisterConfirm (s "register" </> s "confirm" <?> string "token")
         , Parser.map Category (s "category" <?> quuid "id" <?> int "page")
+        , Parser.map AddTask (s "task" </> s "add")
         , Parser.map mkTaskRoute (s "task" </> uuuid)
         ]
 
@@ -122,6 +130,9 @@ routeToString page =
 
         Task id ->
             Builder.relative [ "task", Uuid.toString id ] []
+
+        AddTask ->
+            Builder.relative [ "task", "add" ] []
 
 
 catMaybes : List (Maybe a) -> List a

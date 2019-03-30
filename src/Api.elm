@@ -1,4 +1,15 @@
-port module Api exposing (Response, application, delete, get, login, logout, post, postExpectEmpty, put, viewerChanges)
+port module Api exposing
+    ( Response
+    , application
+    , delete
+    , get
+    , login
+    , logout
+    , post
+    , postExpectEmpty
+    , put
+    , viewerChanges
+    )
 
 import Api.Endpoint as Endpoint exposing (Endpoint)
 import Browser

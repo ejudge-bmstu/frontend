@@ -1,4 +1,9 @@
-module Page exposing (Page(..), Settings, view, viewWithoutHeader)
+module Page exposing
+    ( Page(..)
+    , Settings
+    , view
+    , viewWithoutHeader
+    )
 
 import Bootstrap.Button as Button
 import Bootstrap.Dropdown as Dropdown
@@ -23,6 +28,7 @@ type Page
     | RegisterConfirm
     | Category
     | Task
+    | AddTask
 
 
 type alias Settings msg =

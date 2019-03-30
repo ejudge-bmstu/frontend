@@ -1,4 +1,10 @@
-module Role exposing (Role(..), decoder, encode, hasAdminAccess, hasUserAccess)
+module Role exposing
+    ( Role(..)
+    , decoder
+    , encode
+    , hasAdminAccess
+    , hasUserAccess
+    )
 
 import Json.Decode as Decode exposing (Decoder)
 import Json.Encode as Encode exposing (Value)
