@@ -156,7 +156,7 @@ expectJson toMsg decoder =
                             Ok value
 
                         Err err ->
-                            Err <| ErrorPayload "Bad response" "BadResponse"
+                            Err <| ErrorPayload (Decode.errorToString err) "BadResponse"
 
 
 ignoreResponseBody : (Response () -> msg) -> Expect msg
