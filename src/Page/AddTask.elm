@@ -23,6 +23,7 @@ import Bootstrap.Modal as Modal
 import Bootstrap.Table as Table
 import Bootstrap.Text as Text
 import Bootstrap.Utilities.Size as Size
+import Bootstrap.Utilities.Spacing as Spacing
 import Cred exposing (Cred)
 import File exposing (File)
 import File.Select as File
@@ -60,6 +61,7 @@ type alias Task =
     , cLimits : Limit
     , cppLimits : Limit
     , tests : Maybe File
+    , examples : List ExampleTest
     }
 
 
@@ -72,12 +74,19 @@ type alias ValidTask =
     , cLimits : Limit
     , cppLimits : Limit
     , tests : File
+    , examples : List ExampleTest
     }
 
 
 type ReportAccess
     = FullAccess
     | NoAccess
+
+
+type alias ExampleTest =
+    { input : String
+    , output : String
+    }
 
 
 reportAccessToString : ReportAccess -> String
@@ -138,6 +147,7 @@ validateTask task =
                 , cLimits = task.cLimits
                 , cppLimits = task.cppLimits
                 , tests = tests
+                , examples = task.examples
                 }
 
         _ ->
@@ -167,6 +177,7 @@ init session =
                 , cLimits = { memory = 0, time = 0 }
                 , cppLimits = { memory = 0, time = 0 }
                 , tests = Nothing
+                , examples = []
                 }
             }
 
@@ -191,7 +202,7 @@ view : Model -> { title : String, content : Html Msg }
 view model =
     { title = "Добавление задачи"
     , content =
-        div [ class "content" ]
+        div [ Spacing.mt3 ]
             [ case model.categories of
                 [] ->
                     div [] []
@@ -224,9 +235,36 @@ viewForm model =
 
                 Nothing ->
                     "Выбрать"
+
+        examplesView =
+            List.indexedMap
+                (\ix ex ->
+                    Form.row []
+                        [ Form.col [ Col.offsetSm2, Col.sm4 ]
+                            [ Textarea.textarea
+                                [ Textarea.value <|
+                                    Maybe.withDefault "" <|
+                                        Maybe.map .input <|
+                                            List.getAt ix model.task.examples
+                                , Textarea.onInput <| EnterInput ix
+                                ]
+                            ]
+                        , Form.col [ Col.sm4 ]
+                            [ Textarea.textarea
+                                [ Textarea.value <|
+                                    Maybe.withDefault "" <|
+                                        Maybe.map .output <|
+                                            List.getAt ix model.task.examples
+                                , Textarea.onInput <| EnterOutput ix
+                                ]
+                            ]
+                        , Form.col [ Col.sm2 ] [ Button.button [ Button.warning, Button.onClick (DeleteExample ix) ] [ text "Удалить" ] ]
+                        ]
+                )
+                model.task.examples
     in
     Grid.container []
-        [ Form.form []
+        [ Form.form [] <|
             [ Form.row []
                 [ Form.colLabel [ Col.sm2 ] [ text "Название задачи" ]
                 , Form.col [ Col.sm10 ]
@@ -279,73 +317,81 @@ viewForm model =
                     ]
                 ]
             , Form.row []
-                [ Form.col [ Col.offsetSm2, Col.sm2 ] [ text "Ограничение по времени" ]
-                , Form.col [ Col.sm2 ] [ text "Ограничение по памяти" ]
-                ]
-            , Form.row []
-                [ Form.colLabel [ Col.sm2 ] [ text "Python" ]
-                , Form.col [ Col.sm2 ]
-                    [ Input.number
-                        [ Input.value <| String.fromInt task.pythonLimits.time
-                        , Input.onInput <| LimitEneterd Python Time
-                        ]
-                    ]
-                , Form.col [ Col.sm2 ]
-                    [ Input.number
-                        [ Input.value <| String.fromInt task.pythonLimits.memory
-                        , Input.onInput <| LimitEneterd Python Memory
-                        ]
-                    ]
-                ]
-            , Form.row []
-                [ Form.colLabel [ Col.sm2 ] [ text "C" ]
-                , Form.col [ Col.sm2 ]
-                    [ Input.number
-                        [ Input.value <| String.fromInt task.cLimits.time
-                        , Input.onInput <| LimitEneterd C Time
-                        ]
-                    ]
-                , Form.col [ Col.sm2 ]
-                    [ Input.number
-                        [ Input.value <| String.fromInt task.cLimits.memory
-                        , Input.onInput <| LimitEneterd C Memory
-                        ]
-                    ]
-                ]
-            , Form.row []
-                [ Form.colLabel [ Col.sm2 ] [ text "C++" ]
-                , Form.col [ Col.sm2 ]
-                    [ Input.number
-                        [ Input.value <| String.fromInt task.cppLimits.time
-                        , Input.onInput <| LimitEneterd Cpp Time
-                        ]
-                    ]
-                , Form.col [ Col.sm2 ]
-                    [ Input.number
-                        [ Input.value <| String.fromInt task.cppLimits.memory
-                        , Input.onInput <| LimitEneterd Cpp Memory
-                        ]
-                    ]
-                ]
-            , Form.row []
-                [ Form.colLabel [ Col.sm2 ] [ text "Тесты" ]
-                , Form.col [ Col.sm2 ]
-                    [ Button.button
-                        [ Button.primary, Button.onClick TestsEntered ]
-                        [ text buttonFiles ]
-                    ]
-                ]
-            , Form.row [ Row.rightSm ]
-                [ Form.col [ Col.sm2 ]
-                    [ Button.button
-                        [ Button.primary
-                        , Button.attrs [ class "float-right" ]
-                        , Button.onClick SendTask
-                        ]
-                        [ text "Отправить" ]
-                    ]
+                [ Form.col [ Col.offsetSm2, Col.sm4 ] [ text "Пример входных даннных" ]
+                , Form.col [ Col.sm4 ] [ text "Пример выходных даннных" ]
+                , Form.col [ Col.sm2 ] [ Button.button [ Button.primary, Button.onClick AddExample ] [ text "Добавить" ] ]
                 ]
             ]
+                ++ examplesView
+                ++ [ Form.row
+                        []
+                        [ Form.col [ Col.offsetSm2, Col.sm2 ] [ text "Ограничение по времени" ]
+                        , Form.col [ Col.sm2 ] [ text "Ограничение по памяти" ]
+                        ]
+                   , Form.row []
+                        [ Form.colLabel [ Col.sm2 ] [ text "Python" ]
+                        , Form.col [ Col.sm2 ]
+                            [ Input.number
+                                [ Input.value <| String.fromInt task.pythonLimits.time
+                                , Input.onInput <| LimitEneterd Python Time
+                                ]
+                            ]
+                        , Form.col [ Col.sm2 ]
+                            [ Input.number
+                                [ Input.value <| String.fromInt task.pythonLimits.memory
+                                , Input.onInput <| LimitEneterd Python Memory
+                                ]
+                            ]
+                        ]
+                   , Form.row []
+                        [ Form.colLabel [ Col.sm2 ] [ text "C" ]
+                        , Form.col [ Col.sm2 ]
+                            [ Input.number
+                                [ Input.value <| String.fromInt task.cLimits.time
+                                , Input.onInput <| LimitEneterd C Time
+                                ]
+                            ]
+                        , Form.col [ Col.sm2 ]
+                            [ Input.number
+                                [ Input.value <| String.fromInt task.cLimits.memory
+                                , Input.onInput <| LimitEneterd C Memory
+                                ]
+                            ]
+                        ]
+                   , Form.row []
+                        [ Form.colLabel [ Col.sm2 ] [ text "C++" ]
+                        , Form.col [ Col.sm2 ]
+                            [ Input.number
+                                [ Input.value <| String.fromInt task.cppLimits.time
+                                , Input.onInput <| LimitEneterd Cpp Time
+                                ]
+                            ]
+                        , Form.col [ Col.sm2 ]
+                            [ Input.number
+                                [ Input.value <| String.fromInt task.cppLimits.memory
+                                , Input.onInput <| LimitEneterd Cpp Memory
+                                ]
+                            ]
+                        ]
+                   , Form.row []
+                        [ Form.colLabel [ Col.sm2 ] [ text "Тесты" ]
+                        , Form.col [ Col.sm2 ]
+                            [ Button.button
+                                [ Button.primary, Button.onClick TestsEntered ]
+                                [ text buttonFiles ]
+                            ]
+                        ]
+                   , Form.row [ Row.rightSm ]
+                        [ Form.col [ Col.sm2 ]
+                            [ Button.button
+                                [ Button.primary
+                                , Button.attrs [ class "float-right" ]
+                                , Button.onClick SendTask
+                                ]
+                                [ text "Отправить" ]
+                            ]
+                        ]
+                   ]
         ]
 
 
@@ -403,6 +449,10 @@ type Msg
     | SendTask
     | SendTaskResponse (Api.Response ())
     | CloseModal
+    | EnterInput Int String
+    | EnterOutput Int String
+    | DeleteExample Int
+    | AddExample
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -513,6 +563,92 @@ update msg model =
         CloseModal ->
             ( { model | errorMessage = Nothing }, Cmd.none )
 
+        EnterInput ix inp ->
+            let
+                task =
+                    model.task
+
+                examples =
+                    task.examples
+
+                mExample =
+                    List.getAt ix examples
+
+                updExample =
+                    Maybe.map (\ex -> { ex | input = inp }) mExample
+
+                updExamples =
+                    case updExample of
+                        Just example ->
+                            List.setAt ix example examples
+
+                        Nothing ->
+                            examples
+
+                updTask =
+                    { task | examples = updExamples }
+            in
+            ( { model | task = updTask }, Cmd.none )
+
+        EnterOutput ix outp ->
+            let
+                task =
+                    model.task
+
+                examples =
+                    task.examples
+
+                mExample =
+                    List.getAt ix examples
+
+                updExample =
+                    Maybe.map (\ex -> { ex | output = outp }) mExample
+
+                updExamples =
+                    case updExample of
+                        Just example ->
+                            List.setAt ix example examples
+
+                        Nothing ->
+                            examples
+
+                updTask =
+                    { task | examples = updExamples }
+            in
+            ( { model | task = updTask }, Cmd.none )
+
+        AddExample ->
+            let
+                task =
+                    model.task
+
+                examples =
+                    task.examples
+
+                updExamples =
+                    List.append examples [ { input = "", output = "" } ]
+
+                updTask =
+                    { task | examples = updExamples }
+            in
+            ( { model | task = updTask }, Cmd.none )
+
+        DeleteExample ix ->
+            let
+                task =
+                    model.task
+
+                examples =
+                    task.examples
+
+                updExamples =
+                    List.removeAt ix examples
+
+                updTask =
+                    { task | examples = updExamples }
+            in
+            ( { model | task = updTask }, Cmd.none )
+
 
 updateForm : (Task -> Task) -> Model -> ( Model, Cmd Msg )
 updateForm transform model =
@@ -546,7 +682,7 @@ sendTask : Maybe Cred -> ValidTask -> Cmd Msg
 sendTask cred task =
     let
         body =
-            Http.multipartBody
+            Http.multipartBody <|
                 [ Http.stringPart "name" task.name
                 , Http.stringPart "description" task.description
                 , Http.stringPart "category" (Uuid.toString task.category)
@@ -559,6 +695,14 @@ sendTask cred task =
                 , Http.stringPart "access_report" (reportAccessToString task.access)
                 , Http.filePart "tests" task.tests
                 ]
+                    ++ inputs
+                    ++ outputs
+
+        inputs =
+            List.map (\x -> Http.stringPart "inputs[]" x.input) task.examples
+
+        outputs =
+            List.map (\x -> Http.stringPart "ouputs[]" x.output) task.examples
     in
     Api.postExpectEmpty Endpoint.addTask cred body SendTaskResponse
 
