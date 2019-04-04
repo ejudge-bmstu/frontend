@@ -7,6 +7,7 @@ module Route exposing
     )
 
 import Browser.Navigation as Nav
+import Dict
 import Html exposing (Attribute)
 import Html.Attributes as Attr
 import Url exposing (Url)
@@ -27,7 +28,7 @@ type Route
     | Logout
     | Register
     | RegisterConfirm (Maybe String)
-    | Category (Maybe Uuid) (Maybe Int)
+    | Category
     | Task Uuid
     | AddTask
 
@@ -42,17 +43,14 @@ uuuid =
     Parser.map Uuid.fromString Parser.string
 
 
+bool : String -> Query.Parser (Maybe Bool)
+bool name =
+    Query.enum name (Dict.fromList [ ( "true", True ), ( "false", False ) ])
+
+
 parser : Parser (Route -> a) a
 parser =
     let
-        catCons mid page =
-            case mid of
-                Just id ->
-                    Category mid (Just page)
-
-                Nothing ->
-                    Category Nothing Nothing
-
         mkTaskRoute x =
             case x of
                 Just y ->
@@ -68,7 +66,7 @@ parser =
         , Parser.map Logout (s "logout")
         , Parser.map Register (s "register")
         , Parser.map RegisterConfirm (s "register" </> s "confirm" <?> string "token")
-        , Parser.map Category (s "category" <?> quuid "id" <?> int "page")
+        , Parser.map Category (s "tasks")
         , Parser.map AddTask (s "task" </> s "add")
         , Parser.map mkTaskRoute (s "task" </> uuuid)
         ]
@@ -118,16 +116,20 @@ routeToString page =
         RegisterConfirm _ ->
             Builder.relative [ "register", "confirm" ] []
 
-        Category mId mPageNum ->
-            let
-                mQueries =
-                    catMaybes
-                        [ Maybe.map (Builder.string "id") (Maybe.map Uuid.toString mId)
-                        , Maybe.map (Builder.int "page") mPageNum
-                        ]
-            in
-            Builder.relative [ "category" ] mQueries
+        Category ->
+            Builder.relative [ "tasks" ] []
 
+        -- Category mId mPageNum ->
+        --     let
+        --         mQueries =
+        --             catMaybes
+        --                 [ Maybe.map (Builder.string "id") (Maybe.map Uuid.toString mId)
+        --                 , Maybe.map (Builder.int "page") mPageNum
+        --                 ]
+        --     in
+        --     Builder.relative [ "tasks" ] mQueries
+        -- CategoryNo ->
+        --     Builder.relative [ "tasks", "non_categorized" ] []
         Task id ->
             Builder.relative [ "task", Uuid.toString id ] []
 
