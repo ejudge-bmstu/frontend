@@ -699,10 +699,10 @@ sendTask cred task =
                     ++ outputs
 
         inputs =
-            List.map (\x -> Http.stringPart "inputs[]" x.input) task.examples
+            List.map (Http.stringPart "inputs[]" << .input) task.examples
 
         outputs =
-            List.map (\x -> Http.stringPart "ouputs[]" x.output) task.examples
+            List.map (Http.stringPart "ouputs[]" << .output) task.examples
     in
     Api.postExpectEmpty Endpoint.addTask cred body SendTaskResponse
 
