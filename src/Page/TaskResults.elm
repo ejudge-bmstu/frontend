@@ -1,0 +1,358 @@
+module Page.TaskResults exposing
+    ( Model
+    , Msg(..)
+    , init
+    , subscriptions
+    , toSession
+    , update
+    , view
+    )
+
+import Api
+import Api.Endpoint as Endpoint
+import Bootstrap.Accordion as Accordion
+import Bootstrap.Button as Button
+import Bootstrap.Card as Card
+import Bootstrap.Card.Block as Block
+import Bootstrap.Form as Form
+import Bootstrap.Form.Input as Input
+import Bootstrap.Grid as Grid
+import Bootstrap.Grid.Col as Col
+import Bootstrap.Grid.Row as Row
+import Bootstrap.Modal as Modal
+import Bootstrap.Table as Table
+import Bootstrap.Text as Text
+import Bootstrap.Utilities.Size as Size
+import Cred exposing (Cred)
+import Html exposing (..)
+import Html.Attributes exposing (..)
+import Html.Events exposing (..)
+import Http
+import Json.Decode as D exposing (Decoder)
+import Route
+import Session exposing (Session)
+import Task
+import Time
+import Uuid exposing (Uuid)
+import Viewer exposing (Viewer)
+
+
+
+-- MODEL
+
+
+type alias Model =
+    { zone : Time.Zone
+    , session : Session
+    , tasksResults : Maybe TasksResults
+    , errorMessage : Maybe String
+    , accordionState : Accordion.State
+    }
+
+
+decodeTime : D.Decoder Time.Posix
+decodeTime =
+    D.int
+        |> D.andThen
+            (\ms ->
+                D.succeed <| Time.millisToPosix ms
+            )
+
+
+type alias TaskResult =
+    { name : String
+    , id : Uuid
+    , passed : Int
+    , total : Int
+    , message : Maybe String
+    , date : Time.Posix
+    }
+
+
+taskResultDecoder : Decoder TaskResult
+taskResultDecoder =
+    D.map6 TaskResult
+        (D.field "name" D.string)
+        (D.field "id" Uuid.decoder)
+        (D.field "passed" D.int)
+        (D.field "total" D.int)
+        (D.field "message" (D.maybe D.string))
+        (D.field "date" decodeTime)
+
+
+type alias TasksResults =
+    List TaskResult
+
+
+tasksResultsDecoder : Decoder TasksResults
+tasksResultsDecoder =
+    D.list taskResultDecoder
+
+
+type alias Limit =
+    { language : String
+    , memory : Int
+    , time : Int
+    }
+
+
+limitDecoder : Decoder Limit
+limitDecoder =
+    D.map3 Limit
+        (D.field "language" D.string)
+        (D.field "memory" D.int)
+        (D.field "time" D.int)
+
+
+init : Session -> ( Model, Cmd Msg )
+init session =
+    ( { session = session
+      , tasksResults = Nothing
+      , errorMessage = Nothing
+      , accordionState = Accordion.initialState
+      , zone = Time.utc
+      }
+    , Cmd.batch
+        [ getResults (Session.cred session)
+        , Task.perform AdjustTimeZone Time.here
+        ]
+    )
+
+
+
+-- VIEW
+
+
+view : Model -> { title : String, content : Html Msg }
+view model =
+    { title = "Задача"
+    , content =
+        case model.tasksResults of
+            Just task ->
+                viewTask model task
+
+            Nothing ->
+                div [] []
+    }
+
+
+viewTask : Model -> TasksResults -> Html Msg
+viewTask model tasksResults =
+    Grid.container []
+        [ Grid.row []
+            [ Grid.col [ Col.md12 ]
+                [ Accordion.config AccordionMsg
+                    |> Accordion.withAnimation
+                    |> Accordion.cards
+                        [ Accordion.card
+                            { id = "card1"
+                            , options = []
+                            , header =
+                                Accordion.header [] <| Accordion.toggle [] [ text "Card 1" ]
+                            , blocks =
+                                [ Accordion.block []
+                                    [ Block.text [] [ text "Lorem ipsum etc" ] ]
+                                ]
+                            }
+                        , Accordion.card
+                            { id = "card2"
+                            , options = []
+                            , header =
+                                Accordion.header [] <| Accordion.toggle [] [ text "Card 2" ]
+                            , blocks =
+                                [ Accordion.block []
+                                    [ Block.text [] [ text "Lorem ipsum etc" ] ]
+                                ]
+                            }
+                        ]
+                    |> Accordion.view model.accordionState
+                , showModal model.errorMessage
+                ]
+            ]
+        ]
+
+
+taskView : Model -> TaskResult -> Accordion.Card Msg
+taskView model task =
+    Accordion.card
+        { id = "card1"
+        , options = []
+        , header =
+            Accordion.header []
+                (Accordion.toggle [] [ text task.name ])
+                |> Accordion.appendHeader [ mkDate model.zone task.date ]
+        , blocks =
+            [ Accordion.block []
+                [ Block.text [] [ mkResult task.passed task.total ] ]
+            ]
+                ++ []
+                ++ [ Accordion.block []
+                        [ Block.link [ Route.href <| Route.Task task.id ] [ text "Перейти к задаче" ] ]
+                   ]
+        }
+
+
+monthToInt m =
+    case m of
+        Time.Jan ->
+            1
+
+        Time.Feb ->
+            2
+
+        Time.Mar ->
+            3
+
+        Time.Apr ->
+            4
+
+        Time.May ->
+            5
+
+        Time.Jun ->
+            6
+
+        Time.Jul ->
+            7
+
+        Time.Aug ->
+            8
+
+        Time.Sep ->
+            9
+
+        Time.Oct ->
+            10
+
+        Time.Nov ->
+            11
+
+        Time.Dec ->
+            12
+
+
+mkDate : Time.Zone -> Time.Posix -> Html Msg
+mkDate zone posix =
+    let
+        day =
+            String.fromInt <| Time.toDay zone posix
+
+        month =
+            String.fromInt << monthToInt <| Time.toMonth zone posix
+
+        year =
+            String.fromInt <| Time.toYear zone posix
+    in
+    text <| day ++ "/" ++ month ++ "/" ++ year
+
+
+mkResult : Int -> Int -> Html Msg
+mkResult passed_ total_ =
+    let
+        passed =
+            String.fromInt passed_
+
+        total =
+            String.fromInt total_
+    in
+    text <| passed ++ "/" ++ total
+
+
+showModal : Maybe String -> Html Msg
+showModal maybeMessage =
+    let
+        ( modalVisibility, message ) =
+            case maybeMessage of
+                Just message_ ->
+                    ( Modal.shown, message_ )
+
+                Nothing ->
+                    ( Modal.hidden, "" )
+    in
+    Modal.config CloseModal
+        |> Modal.small
+        |> Modal.hideOnBackdropClick True
+        |> Modal.h3 [] [ text "Ошибка" ]
+        |> Modal.body [] [ p [] [ text message ] ]
+        |> Modal.footer []
+            [ Button.button
+                [ Button.outlinePrimary
+                , Button.attrs [ onClick CloseModal ]
+                ]
+                [ text "Закрыть" ]
+            ]
+        |> Modal.view modalVisibility
+
+
+
+-- UPDATE
+
+
+type Msg
+    = GotTasksResults (Api.Response TasksResults)
+    | GotSession Session
+    | CloseModal
+    | AccordionMsg Accordion.State
+    | AdjustTimeZone Time.Zone
+
+
+update : Msg -> Model -> ( Model, Cmd Msg )
+update msg model =
+    case msg of
+        GotTasksResults (Ok task) ->
+            ( { model | tasksResults = Just task }
+            , Cmd.none
+            )
+
+        GotTasksResults (Err error) ->
+            ( { model | errorMessage = Just error.message }
+            , Cmd.none
+            )
+
+        GotSession session ->
+            ( { model | session = session }
+            , Route.replaceUrl (Session.navKey session) Route.Root
+            )
+
+        CloseModal ->
+            ( { model | errorMessage = Nothing }, Cmd.none )
+
+        AccordionMsg state ->
+            ( { model | accordionState = state }
+            , Cmd.none
+            )
+
+        AdjustTimeZone newZone ->
+            ( { model | zone = newZone }
+            , Cmd.none
+            )
+
+
+
+-- SUBSCRIPTIONS
+
+
+subscriptions : Model -> Sub Msg
+subscriptions model =
+    Sub.batch
+        [ Session.changes GotSession (Session.navKey model.session)
+        , Accordion.subscriptions model.accordionState AccordionMsg
+        ]
+
+
+
+-- HTTP
+
+
+getResults : Maybe Cred -> Cmd Msg
+getResults cred =
+    Api.get Endpoint.getResults cred GotTasksResults tasksResultsDecoder
+
+
+
+-- EXPORT
+
+
+toSession : Model -> Session
+toSession model =
+    model.session
