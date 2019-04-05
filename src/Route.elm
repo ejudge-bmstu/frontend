@@ -30,6 +30,7 @@ type Route
     | Category (Maybe Uuid) (Maybe Int)
     | Task Uuid
     | AddTask
+    | TaskSolution Uuid
 
 
 quuid : String -> Query.Parser (Maybe Uuid)
@@ -60,6 +61,14 @@ parser =
 
                 Nothing ->
                     NotFound
+
+        mkTaskSolutionRoute x =
+            case x of
+                Just y ->
+                    TaskSolution y
+
+                Nothing ->
+                    NotFound
     in
     oneOf
         [ Parser.map Root top
@@ -70,6 +79,7 @@ parser =
         , Parser.map RegisterConfirm (s "register" </> s "confirm" <?> string "token")
         , Parser.map Category (s "category" <?> quuid "id" <?> int "page")
         , Parser.map AddTask (s "task" </> s "add")
+        , Parser.map mkTaskSolutionRoute (s "task" </> s "solution" <?> quuid "id")
         , Parser.map mkTaskRoute (s "task" </> uuuid)
         ]
 
@@ -133,6 +143,9 @@ routeToString page =
 
         AddTask ->
             Builder.relative [ "task", "add" ] []
+
+        TaskSolution x ->
+            Builder.relative [ "task", "solution", Uuid.toString x ] []
 
 
 catMaybes : List (Maybe a) -> List a

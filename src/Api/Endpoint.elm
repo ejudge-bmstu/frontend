@@ -11,6 +11,7 @@ module Api.Endpoint exposing
     , register
     , registerComplete
     , request
+    , taskSolution
     )
 
 import Http
@@ -114,3 +115,8 @@ getTask id =
 addTask : Endpoint
 addTask =
     url [ "task", "add" ] []
+
+
+taskSolution : Endpoint
+taskSolution =
+    url [ "task", "solution" ] []

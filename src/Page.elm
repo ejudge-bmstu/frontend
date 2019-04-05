@@ -29,6 +29,7 @@ type Page
     | Category
     | Task
     | AddTask
+    | TaskSolution
 
 
 type alias Settings msg =
