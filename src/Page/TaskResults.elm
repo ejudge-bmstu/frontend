@@ -65,18 +65,20 @@ type alias TaskResult =
     , passed : Maybe Int
     , total : Int
     , message : Maybe String
+    , result : String
     , date : Time.Posix
     }
 
 
 taskResultDecoder : Decoder TaskResult
 taskResultDecoder =
-    D.map6 TaskResult
+    D.map7 TaskResult
         (D.field "name" D.string)
         (D.field "id" Uuid.decoder)
         (D.field "passed" (D.maybe D.int))
         (D.field "total" D.int)
         (D.field "message" (D.maybe D.string))
+        (D.field "result" D.string)
         (D.field "date" decodeTime)
 
 
@@ -173,6 +175,8 @@ taskView model ix task =
         , blocks =
             [ Accordion.block []
                 [ Block.text [] [ text <| "Дата прохождения: " ++ mkDate model.zone task.date ] ]
+            , Accordion.block []
+                [ Block.text [] [ text <| "Статус: " ++ task.result ] ]
             , Accordion.block []
                 [ Block.text [] [ text <| "Число пройденных тестов: " ++ mkResult task.passed task.total ] ]
             ]
