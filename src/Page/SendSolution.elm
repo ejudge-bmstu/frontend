@@ -49,6 +49,7 @@ type alias Model =
     , task : Maybe Task
     , file : Maybe File
     , errorMessage : Maybe String
+    , id : Uuid
     }
 
 
@@ -160,6 +161,7 @@ init session id =
             , errorMessage = Nothing
             , task = Nothing
             , file = Nothing
+            , id = id
             }
 
         role =
@@ -362,13 +364,13 @@ update msg model =
         SendSolution ->
             case model.file of
                 Just file ->
-                    ( model, sendSolution (Session.cred model.session) file )
+                    ( model, sendSolution (Session.cred model.session) file model.id )
 
                 Nothing ->
                     ( model, Cmd.none )
 
         SendSolutionResponse (Ok _) ->
-            ( { model | errorMessage = Just "Решиние отправлено" }, Cmd.none )
+            ( { model | errorMessage = Just "Решение отправлено" }, Cmd.none )
 
         SendSolutionResponse (Err err) ->
             ( { model | errorMessage = Just err.message }, Cmd.none )
@@ -395,12 +397,13 @@ getTask cred id =
     Api.get (Endpoint.getTask id) cred GotTask taskDecoder
 
 
-sendSolution : Maybe Cred -> File -> Cmd Msg
-sendSolution cred file =
+sendSolution : Maybe Cred -> File -> Uuid -> Cmd Msg
+sendSolution cred file id =
     let
         body =
             Http.multipartBody <|
                 [ Http.filePart "solution" file
+                , Http.stringPart "id" <| Uuid.toString id
                 ]
     in
     Api.postExpectEmpty Endpoint.taskSolution cred body SendSolutionResponse
