@@ -143,7 +143,7 @@ viewTask model tasksResults =
             [ Grid.col [ Col.md12 ]
                 [ Accordion.config AccordionMsg
                     |> Accordion.withAnimation
-                    |> (Accordion.cards <| List.map (taskView model) tasksResults)
+                    |> (Accordion.cards <| List.indexedMap (taskView model) tasksResults)
                     |> Accordion.view model.accordionState
                 , showModal model.errorMessage
                 ]
@@ -151,8 +151,8 @@ viewTask model tasksResults =
         ]
 
 
-taskView : Model -> TaskResult -> Accordion.Card Msg
-taskView model task =
+taskView : Model -> Int -> TaskResult -> Accordion.Card Msg
+taskView model ix task =
     let
         messageBlock =
             case task.message of
@@ -165,7 +165,7 @@ taskView model task =
                     []
     in
     Accordion.card
-        { id = "card1"
+        { id = String.fromInt ix
         , options = []
         , header =
             Accordion.header []
