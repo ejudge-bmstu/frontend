@@ -15,7 +15,7 @@ module Api.Endpoint exposing
     )
 
 import Http
-import Url.Builder exposing (QueryParameter, int)
+import Url.Builder exposing (QueryParameter, int, string)
 import Uuid exposing (Uuid, toString)
 
 
@@ -102,9 +102,23 @@ editCategory =
     url [ "category", "edit" ] []
 
 
-listTasks : Uuid -> Int -> Endpoint
-listTasks id page =
-    url [ "categories", toString id, "tasks" ] [ int "page" page ]
+listTasks : Maybe Uuid -> Int -> Endpoint
+listTasks mId page =
+    let
+        query =
+            case mId of
+                Just id ->
+                    [ string "id" <| Uuid.toString id
+                    , int "page" page
+                    , string "categorized" "true"
+                    ]
+
+                Nothing ->
+                    [ int "page" page
+                    , string "categorized" "false"
+                    ]
+    in
+    url [ "tasks" ] query
 
 
 getTask : Uuid -> Endpoint

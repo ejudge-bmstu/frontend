@@ -16,6 +16,7 @@ import Bootstrap.Grid as Grid
 import Bootstrap.Grid.Col as Col
 import Bootstrap.ListGroup as ListGroup
 import Bootstrap.Modal as Modal
+import Bootstrap.Text as Text
 import Bootstrap.Utilities.Flex as Flex
 import Bootstrap.Utilities.Size as Size
 import Bootstrap.Utilities.Spacing as Spacing
@@ -50,25 +51,22 @@ type alias Model =
     }
 
 
-init : Session -> Maybe Uuid -> Maybe Int -> ( Model, Cmd Msg )
-init session categoryId page =
+init : Session -> ( Model, Cmd Msg )
+init session =
     let
-        subpageInit =
-            Maybe.map (Tasks.init session page) categoryId
-
-        ( subpage, subCmd ) =
-            case subpageInit of
-                Just ( subpage_, subCmd_ ) ->
-                    ( Just (Tasks subpage_), subCmd_ )
-
-                Nothing ->
-                    ( Nothing, Cmd.none )
-
+        -- subpageInit =
+        --     Maybe.map (Tasks.init session page) categoryId
+        -- ( subpage, subCmd ) =
+        --     case subpageInit of
+        --         Just ( subpage_, subCmd_ ) ->
+        --             ( Just (Tasks subpage_), subCmd_ )
+        --         Nothing ->
+        --             ( Nothing, Cmd.none )
         model =
             { session = session
             , categories = []
             , message = Nothing
-            , subpage = subpage
+            , subpage = Nothing
             }
 
         role =
@@ -79,10 +77,7 @@ init session categoryId page =
     in
     if Role.hasUserAccess role then
         ( model
-        , Cmd.batch
-            [ getCategories <| Session.cred session
-            , Cmd.map TasksMsg subCmd
-            ]
+        , getCategories <| Session.cred session
         )
 
     else
@@ -105,6 +100,7 @@ view model =
                     [ Grid.col
                         [ Col.lg4 ]
                         [ viewAddCategory model
+                        , viewNonCategory model
                         , viewCategoryList model
                         ]
                     , Grid.col
@@ -115,6 +111,16 @@ view model =
             , showModal model.message
             ]
     }
+
+
+viewNonCategory : Model -> Html Msg
+viewNonCategory model =
+    Button.button
+        [ Button.light
+        , Button.attrs [ Spacing.mb3, Size.w100 ]
+        , Button.onClick (ShowTasks Nothing)
+        ]
+        [ text "Без категории" ]
 
 
 viewAddCategory : Model -> Html Msg
@@ -138,7 +144,7 @@ viewCategoryList model =
         activeId =
             case model.subpage of
                 Just (Tasks tasks) ->
-                    Just tasks.id
+                    tasks.id
 
                 _ ->
                     Nothing
@@ -167,7 +173,7 @@ viewCategoryItem id category =
             [ Flex.block
             , Flex.justifyBetween
             , Flex.alignItemsCenter
-            , onClick (ShowTasks category.id)
+            , onClick (ShowTasks (Just category.id))
             ]
          ]
             ++ (if Just category.id == id then
@@ -216,7 +222,7 @@ type Msg
     = GotSession Session
     | CloseModal
     | GotCategories (Api.Response (List Category))
-    | ShowTasks Uuid
+    | ShowTasks (Maybe Uuid)
     | TasksMsg Tasks.Msg
     | ShowAddTask
     | AddMsg Add.Msg
@@ -246,13 +252,27 @@ update msg model =
         ( ShowTasks id, _ ) ->
             let
                 ( subpage, cmd ) =
-                    Tasks.init model.session Nothing id
+                    Tasks.init model.session id
+            in
+            ( { model | subpage = Just <| Tasks subpage }
+            , Cmd.map TasksMsg cmd
+            )
+
+        ( TasksMsg (Tasks.SaveResponse (Ok x)), Just (Tasks tasks) ) ->
+            let
+                ( subpage, cmd ) =
+                    Tasks.update (Tasks.SaveResponse (Ok x)) tasks
             in
             ( { model | subpage = Just <| Tasks subpage }
             , Cmd.batch
-                [ Cmd.map TasksMsg cmd
-                , Route.replaceUrl (Session.navKey model.session) <| Route.Category (Just id) Nothing
+                [ getCategories <| Session.cred model.session
+                , Cmd.map TasksMsg cmd
                 ]
+            )
+
+        ( TasksMsg (Tasks.DeleteResponse (Ok x)), Just (Tasks tasks) ) ->
+            ( { model | subpage = Nothing }
+            , getCategories <| Session.cred model.session
             )
 
         ( TasksMsg tasksMsg, Just (Tasks tasks) ) ->

@@ -212,12 +212,8 @@ changeRouteTo maybeRoute model =
         Just Route.Logout ->
             ( model, Api.logout )
 
-        Just (Route.Category catId page) ->
-            -- case model.page of
-            -- Category cat ->
-            --     ( model, Cmd.none )
-            -- _ ->
-            Category.init session catId page
+        Just Route.Category ->
+            Category.init session
                 |> updateWith model Category CategoryMsg
 
         Just (Route.Task id) ->
