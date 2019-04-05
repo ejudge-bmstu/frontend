@@ -62,7 +62,7 @@ decodeTime =
 type alias TaskResult =
     { name : String
     , id : Uuid
-    , passed : Int
+    , passed : Maybe Int
     , total : Int
     , message : Maybe String
     , date : Time.Posix
@@ -74,7 +74,7 @@ taskResultDecoder =
     D.map6 TaskResult
         (D.field "name" D.string)
         (D.field "id" Uuid.decoder)
-        (D.field "passed" D.int)
+        (D.field "passed" (D.maybe D.int))
         (D.field "total" D.int)
         (D.field "message" (D.maybe D.string))
         (D.field "date" decodeTime)
@@ -143,28 +143,7 @@ viewTask model tasksResults =
             [ Grid.col [ Col.md12 ]
                 [ Accordion.config AccordionMsg
                     |> Accordion.withAnimation
-                    |> Accordion.cards
-                        [ Accordion.card
-                            { id = "card1"
-                            , options = []
-                            , header =
-                                Accordion.header [] <| Accordion.toggle [] [ text "Card 1" ]
-                            , blocks =
-                                [ Accordion.block []
-                                    [ Block.text [] [ text "Lorem ipsum etc" ] ]
-                                ]
-                            }
-                        , Accordion.card
-                            { id = "card2"
-                            , options = []
-                            , header =
-                                Accordion.header [] <| Accordion.toggle [] [ text "Card 2" ]
-                            , blocks =
-                                [ Accordion.block []
-                                    [ Block.text [] [ text "Lorem ipsum etc" ] ]
-                                ]
-                            }
-                        ]
+                    |> (Accordion.cards <| List.map (taskView model) tasksResults)
                     |> Accordion.view model.accordionState
                 , showModal model.errorMessage
                 ]
@@ -174,18 +153,30 @@ viewTask model tasksResults =
 
 taskView : Model -> TaskResult -> Accordion.Card Msg
 taskView model task =
+    let
+        messageBlock =
+            case task.message of
+                Just message ->
+                    [ Accordion.block []
+                        [ Block.text [] [ text <| "Сообщение: " ++ message ] ]
+                    ]
+
+                Nothing ->
+                    []
+    in
     Accordion.card
         { id = "card1"
         , options = []
         , header =
             Accordion.header []
                 (Accordion.toggle [] [ text task.name ])
-                |> Accordion.appendHeader [ mkDate model.zone task.date ]
         , blocks =
             [ Accordion.block []
-                [ Block.text [] [ mkResult task.passed task.total ] ]
+                [ Block.text [] [ text <| "Дата прохождения: " ++ mkDate model.zone task.date ] ]
+            , Accordion.block []
+                [ Block.text [] [ text <| "Число пройденных тестов: " ++ mkResult task.passed task.total ] ]
             ]
-                ++ []
+                ++ messageBlock
                 ++ [ Accordion.block []
                         [ Block.link [ Route.href <| Route.Task task.id ] [ text "Перейти к задаче" ] ]
                    ]
@@ -231,7 +222,7 @@ monthToInt m =
             12
 
 
-mkDate : Time.Zone -> Time.Posix -> Html Msg
+mkDate : Time.Zone -> Time.Posix -> String
 mkDate zone posix =
     let
         day =
@@ -243,19 +234,19 @@ mkDate zone posix =
         year =
             String.fromInt <| Time.toYear zone posix
     in
-    text <| day ++ "/" ++ month ++ "/" ++ year
+    day ++ "/" ++ month ++ "/" ++ year
 
 
-mkResult : Int -> Int -> Html Msg
+mkResult : Maybe Int -> Int -> String
 mkResult passed_ total_ =
     let
         passed =
-            String.fromInt passed_
+            Maybe.withDefault "?" <| Maybe.map String.fromInt passed_
 
         total =
             String.fromInt total_
     in
-    text <| passed ++ "/" ++ total
+    passed ++ "/" ++ total
 
 
 showModal : Maybe String -> Html Msg
