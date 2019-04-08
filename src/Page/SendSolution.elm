@@ -82,7 +82,7 @@ taskDecoder =
         (D.field "name" D.string)
         (D.field "description" D.string)
         (D.field "category" categoryDecoder)
-        (D.field "access" (D.map (Maybe.withDefault FullAccess << reportAccessFromString) D.string))
+        (D.field "access_report" (D.map (Maybe.withDefault FullAccess << reportAccessFromString) D.string))
         (D.field "limits" (D.list limitDecoder))
         (D.field "examples" (D.list exampleDecoder))
 

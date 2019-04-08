@@ -129,12 +129,15 @@ view : Model -> { title : String, content : Html Msg }
 view model =
     { title = "Задача"
     , content =
-        case model.tasksResults of
-            Just task ->
-                viewTask model task
+        div []
+            [ case model.tasksResults of
+                Just task ->
+                    viewTask model task
 
-            Nothing ->
-                div [] []
+                Nothing ->
+                    div [] []
+            , showModal model.errorMessage
+            ]
     }
 
 
