@@ -32,6 +32,7 @@ type Route
     | Task Uuid
     | AddTask
     | TaskSolution Uuid
+    | UserResults
 
 
 quuid : String -> Query.Parser (Maybe Uuid)
@@ -79,6 +80,7 @@ parser =
         , Parser.map AddTask (s "task" </> s "add")
         , Parser.map mkTaskSolutionRoute (s "task" </> s "solution" <?> quuid "id")
         , Parser.map mkTaskRoute (s "task" </> uuuid)
+        , Parser.map UserResults (s "user" </> s "results")
         ]
 
 
@@ -129,17 +131,6 @@ routeToString page =
         Category ->
             Builder.relative [ "tasks" ] []
 
-        -- Category mId mPageNum ->
-        --     let
-        --         mQueries =
-        --             catMaybes
-        --                 [ Maybe.map (Builder.string "id") (Maybe.map Uuid.toString mId)
-        --                 , Maybe.map (Builder.int "page") mPageNum
-        --                 ]
-        --     in
-        --     Builder.relative [ "tasks" ] mQueries
-        -- CategoryNo ->
-        --     Builder.relative [ "tasks", "non_categorized" ] []
         Task id ->
             Builder.relative [ "task", Uuid.toString id ] []
 
@@ -148,6 +139,9 @@ routeToString page =
 
         TaskSolution x ->
             Builder.relative [ "task", "solution", Uuid.toString x ] []
+
+        UserResults ->
+            Builder.relative [ "user", "results" ] []
 
 
 catMaybes : List (Maybe a) -> List a

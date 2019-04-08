@@ -20,6 +20,7 @@ import Page.RegisterConfirm as RegisterConfirm
 import Page.Root as Root
 import Page.SendSolution as SendSolution
 import Page.Task as Task
+import Page.TaskResults as TaskResults
 import Route exposing (Route)
 import Session exposing (Session(..))
 import Url exposing (Url)
@@ -44,6 +45,7 @@ type Page
     | Task Task.Model
     | AddTask AddTask.Model
     | SendSolution SendSolution.Model
+    | TaskResults TaskResults.Model
 
 
 
@@ -124,6 +126,9 @@ view model =
         SendSolution task ->
             viewPage Page.TaskSolution SendSolutionMsg (SendSolution.view task) True
 
+        TaskResults task ->
+            viewPage Page.UserResults TaskResultsMsg (TaskResults.view task) True
+
 
 
 -- UPDATE
@@ -144,6 +149,7 @@ type Msg
     | TaskMsg Task.Msg
     | AddTaskMsg AddTask.Msg
     | SendSolutionMsg SendSolution.Msg
+    | TaskResultsMsg TaskResults.Msg
 
 
 toSession : Model -> Session
@@ -178,6 +184,9 @@ toSession model =
 
         SendSolution sendSolution ->
             SendSolution.toSession sendSolution
+
+        TaskResults results ->
+            TaskResults.toSession results
 
 
 changeRouteTo : Maybe Route -> Model -> ( Model, Cmd Msg )
@@ -227,6 +236,10 @@ changeRouteTo maybeRoute model =
         Just (Route.TaskSolution id) ->
             SendSolution.init session id
                 |> updateWith model SendSolution SendSolutionMsg
+
+        Just Route.UserResults ->
+            TaskResults.init session
+                |> updateWith model TaskResults TaskResultsMsg
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -285,6 +298,10 @@ update msg model =
             SendSolution.update subMsg task
                 |> updateWith model SendSolution SendSolutionMsg
 
+        ( TaskResultsMsg subMsg, TaskResults task ) ->
+            TaskResults.update subMsg task
+                |> updateWith model TaskResults TaskResultsMsg
+
         ( NavbarMsg state, _ ) ->
             ( { model | navbar = state }, Cmd.none )
 
@@ -342,6 +359,9 @@ subscriptions model =
 
                 SendSolution task ->
                     Sub.map SendSolutionMsg (SendSolution.subscriptions task)
+
+                TaskResults results ->
+                    Sub.map TaskResultsMsg (TaskResults.subscriptions results)
     in
     Sub.batch
         [ Dropdown.subscriptions model.userDropdown DropdownMsg

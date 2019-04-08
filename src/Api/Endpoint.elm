@@ -4,6 +4,7 @@ module Api.Endpoint exposing
     , addTask
     , deleteCategory
     , editCategory
+    , getResults
     , getTask
     , listCategories
     , listTasks
@@ -134,3 +135,8 @@ addTask =
 taskSolution : Endpoint
 taskSolution =
     url [ "task", "solution" ] []
+
+
+getResults : Endpoint
+getResults =
+    url [ "user", "solutions" ] []

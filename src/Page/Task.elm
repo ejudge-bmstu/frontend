@@ -47,7 +47,7 @@ type alias Model =
 type alias Task =
     { name : String
     , description : String
-    , category : Category
+    , category : Maybe Category
     , limits : List Limit
     }
 
@@ -57,7 +57,7 @@ taskDecoder =
     D.map4 Task
         (D.field "name" D.string)
         (D.field "description" D.string)
-        (D.field "category" categoryDecoder)
+        (D.field "category" (D.maybe categoryDecoder))
         (D.field "limits" (D.list limitDecoder))
 
 
@@ -108,42 +108,53 @@ view : Model -> { title : String, content : Html Msg }
 view model =
     { title = "Задача"
     , content =
-        case model.task of
-            Just task ->
-                viewTask task
+        div []
+            [ case model.task of
+                Just task ->
+                    viewTask task
 
-            Nothing ->
-                div [] []
+                Nothing ->
+                    div [] []
+            , showModal model.errorMessage
+            ]
     }
 
 
 viewTask : Task -> Html Msg
 viewTask task =
+    let
+        cat =
+            case task.category of
+                Just cat_ ->
+                    [ p []
+                        [ text <| "Категория: " ++ cat_.name
+                        ]
+                    ]
+
+                Nothing ->
+                    []
+    in
     Grid.container []
         [ Grid.row []
-            [ Grid.col []
+            [ Grid.col [] <|
                 [ h3 [] [ text task.name ]
                 , p [] [ text task.description ]
-                , p []
-                    [ text <| "Категория: " ++ task.category.name
-
-                    -- , a [ Route.href (Route.Category (Just task.category.id) Nothing) ]
-                    --     [ text task.category.name ]
-                    ]
-                , h4 [] [ text "Ограничения" ]
-                , Table.table
-                    { options = [ Table.striped, Table.hover ]
-                    , thead =
-                        Table.simpleThead
-                            [ Table.th [] [ text "" ]
-                            , Table.th [] [ text "Ограничение по времени (с)" ]
-                            , Table.th [] [ text "Ограничние по памяти (Мб)" ]
-                            ]
-                    , tbody =
-                        Table.tbody [] <|
-                            List.map mkTr task.limits
-                    }
                 ]
+                    ++ cat
+                    ++ [ h4 [] [ text "Ограничения" ]
+                       , Table.table
+                            { options = [ Table.striped, Table.hover ]
+                            , thead =
+                                Table.simpleThead
+                                    [ Table.th [] [ text "" ]
+                                    , Table.th [] [ text "Ограничение по времени (с)" ]
+                                    , Table.th [] [ text "Ограничние по памяти (Мб)" ]
+                                    ]
+                            , tbody =
+                                Table.tbody [] <|
+                                    List.map mkTr task.limits
+                            }
+                       ]
             ]
         ]
 
