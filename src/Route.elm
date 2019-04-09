@@ -12,8 +12,8 @@ import Html exposing (Attribute)
 import Html.Attributes as Attr
 import Url exposing (Url)
 import Url.Builder as Builder
-import Url.Parser as Parser exposing ((</>), (<?>), Parser, int, oneOf, s, string, top)
-import Url.Parser.Query as Query exposing (int, string)
+import Url.Parser as Parser exposing ((</>), (<?>), Parser, oneOf, s, string, top)
+import Url.Parser.Query as Query exposing (string)
 import Uuid exposing (Uuid)
 
 

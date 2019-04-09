@@ -12,7 +12,6 @@ import Api
 import Api.Endpoint as Endpoint
 import Bootstrap.Button as Button
 import Bootstrap.Form as Form
-import Bootstrap.Form.Checkbox as Checkbox
 import Bootstrap.Form.Input as Input
 import Bootstrap.Form.Select as Select
 import Bootstrap.Form.Textarea as Textarea
@@ -20,9 +19,6 @@ import Bootstrap.Grid as Grid
 import Bootstrap.Grid.Col as Col
 import Bootstrap.Grid.Row as Row
 import Bootstrap.Modal as Modal
-import Bootstrap.Table as Table
-import Bootstrap.Text as Text
-import Bootstrap.Utilities.Size as Size
 import Bootstrap.Utilities.Spacing as Spacing
 import Cred exposing (Cred)
 import Data.ReportAccess exposing (..)

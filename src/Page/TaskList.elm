@@ -15,8 +15,6 @@ import Bootstrap.Button as Button
 import Bootstrap.Grid as Grid
 import Bootstrap.Grid.Col as Col
 import Bootstrap.ListGroup as ListGroup
-import Bootstrap.Modal as Modal
-import Bootstrap.Text as Text
 import Bootstrap.Utilities.Flex as Flex
 import Bootstrap.Utilities.Size as Size
 import Bootstrap.Utilities.Spacing as Spacing

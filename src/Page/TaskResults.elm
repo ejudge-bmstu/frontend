@@ -11,24 +11,14 @@ module Page.TaskResults exposing
 import Api
 import Api.Endpoint as Endpoint
 import Bootstrap.Accordion as Accordion
-import Bootstrap.Button as Button
-import Bootstrap.Card as Card
 import Bootstrap.Card.Block as Block
-import Bootstrap.Form as Form
-import Bootstrap.Form.Input as Input
 import Bootstrap.Grid as Grid
 import Bootstrap.Grid.Col as Col
-import Bootstrap.Grid.Row as Row
-import Bootstrap.Modal as Modal
-import Bootstrap.Table as Table
-import Bootstrap.Text as Text
-import Bootstrap.Utilities.Size as Size
 import Cred exposing (Cred)
 import Data.Date exposing (..)
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
-import Http
 import Json.Decode as D exposing (Decoder)
 import Page.Utils exposing (..)
 import Route

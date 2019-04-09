@@ -12,8 +12,6 @@ module Page.RegisterConfirm exposing
 
 import Api
 import Api.Endpoint as Endpoint
-import Bootstrap.Button as Button
-import Bootstrap.Modal as Modal
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
