@@ -23,6 +23,7 @@ import Html.Attributes exposing (..)
 import Html.Events exposing (..)
 import Http
 import Json.Encode as Encode
+import Page.Utils exposing (..)
 import Route
 import Session exposing (Session)
 import Viewer exposing (Viewer)
@@ -35,7 +36,7 @@ import Viewer exposing (Viewer)
 type alias Model =
     { session : Session
     , form : Form
-    , errorMessage : Maybe String
+    , modalMessage : ModalMessage
     }
 
 
@@ -52,7 +53,7 @@ init session =
             { username = ""
             , password = ""
             }
-      , errorMessage = Nothing
+      , modalMessage = ModalMessage Nothing
       }
     , Cmd.none
     )
@@ -66,7 +67,7 @@ view : Model -> { title : String, content : Html Msg }
 view model =
     { title = "Вход"
     , content =
-        div [ class "vertical-center-wrapper" ]
+        divWithModal model.modalMessage CloseModal [ class "vertical-center-wrapper" ] <|
             [ div [ class "vertical-center" ]
                 [ Grid.container
                     []
@@ -88,35 +89,8 @@ view model =
                         ]
                     ]
                 ]
-            , showModal model.errorMessage
             ]
     }
-
-
-showModal : Maybe String -> Html Msg
-showModal maybeMessage =
-    let
-        ( modalVisibility, message ) =
-            case maybeMessage of
-                Just message_ ->
-                    ( Modal.shown, message_ )
-
-                Nothing ->
-                    ( Modal.hidden, "" )
-    in
-    Modal.config CloseModal
-        |> Modal.small
-        |> Modal.hideOnBackdropClick True
-        |> Modal.h3 [] [ text "Ошибка" ]
-        |> Modal.body [] [ p [] [ text message ] ]
-        |> Modal.footer []
-            [ Button.button
-                [ Button.outlinePrimary
-                , Button.attrs [ onClick CloseModal ]
-                ]
-                [ text "Закрыть" ]
-            ]
-        |> Modal.view modalVisibility
 
 
 viewForm : Form -> Html Msg
@@ -180,18 +154,17 @@ update msg model =
             )
 
         CompletedLogin (Err error) ->
-            ( { model | errorMessage = Just error.message }
+            ( { model | modalMessage = ModalMessage <| Just error.message }
             , Cmd.none
             )
 
         GotSession session ->
-            Debug.log "!@#!@#!" <|
-                ( { model | session = session }
-                , Route.replaceUrl (Session.navKey session) Route.Root
-                )
+            ( { model | session = session }
+            , Route.replaceUrl (Session.navKey session) Route.Root
+            )
 
         CloseModal ->
-            ( { model | errorMessage = Nothing }, Cmd.none )
+            ( { model | modalMessage = ModalMessage Nothing }, Cmd.none )
 
 
 updateForm : (Form -> Form) -> Model -> ( Model, Cmd Msg )

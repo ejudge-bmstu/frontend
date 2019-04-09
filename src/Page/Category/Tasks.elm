@@ -29,6 +29,7 @@ import Http
 import Json.Decode as D exposing (Decoder)
 import Json.Encode as E
 import List.Extra as List
+import Page.Utils exposing (..)
 import Role
 import Route
 import Session exposing (Session(..))
@@ -47,7 +48,7 @@ type alias Model =
     , page : Int
     , pages : Int
     , id : Maybe Uuid
-    , message : Maybe String
+    , modalMessage : ModalMessage
     , name : Maybe String
     , edit : Bool
     , editName : String
@@ -72,7 +73,7 @@ init session mId =
             , page = 1
             , pages = 0
             , id = mId
-            , message = Nothing
+            , modalMessage = ModalMessage Nothing
             , name = Just ""
             , edit = False
             , editName = ""
@@ -111,7 +112,7 @@ view model =
                 [ Card.columns <|
                     List.map taskView model.tasks
                 , customPagination model
-                , showModal model.message
+                , divWithModal model.modalMessage CloseModal [] []
                 ]
             ]
         ]
@@ -263,32 +264,6 @@ viewTaskList model =
     div [] []
 
 
-showModal : Maybe String -> Html Msg
-showModal maybeMessage =
-    let
-        ( modalVisibility, message ) =
-            case maybeMessage of
-                Just message_ ->
-                    ( Modal.shown, message_ )
-
-                Nothing ->
-                    ( Modal.hidden, "" )
-    in
-    Modal.config CloseModal
-        |> Modal.small
-        |> Modal.hideOnBackdropClick True
-        |> Modal.h3 [] [ text "Ошибка" ]
-        |> Modal.body [] [ p [] [ text message ] ]
-        |> Modal.footer []
-            [ Button.button
-                [ Button.outlinePrimary
-                , Button.attrs [ onClick CloseModal ]
-                ]
-                [ text "Закрыть" ]
-            ]
-        |> Modal.view modalVisibility
-
-
 
 -- UPDATE
 
@@ -320,13 +295,13 @@ update msg model =
             )
 
         CloseModal ->
-            ( { model | message = Nothing }, Cmd.none )
+            ( { model | modalMessage = ModalMessage Nothing }, Cmd.none )
 
         GotTasks (Ok tasks) ->
             ( { model | tasks = tasks.tasks, pages = tasks.pages, name = tasks.name }, Cmd.none )
 
         GotTasks (Err err) ->
-            ( { model | message = Just err.message }, Cmd.none )
+            ( { model | modalMessage = ModalMessage <| Just err.message }, Cmd.none )
 
         PaginationMsg page ->
             ( { model | page = page }, model.getTasks page )
@@ -352,7 +327,7 @@ update msg model =
             ( { model | edit = False, name = Just model.editName, editName = "" }, Cmd.none )
 
         SaveResponse (Err err) ->
-            ( { model | message = Just err.message }, Cmd.none )
+            ( { model | modalMessage = ModalMessage <| Just err.message }, Cmd.none )
 
         Delete ->
             case model.id of
@@ -366,7 +341,7 @@ update msg model =
             ( model, Cmd.none )
 
         DeleteResponse (Err err) ->
-            ( { model | message = Just err.message }, Cmd.none )
+            ( { model | modalMessage = ModalMessage <| Just err.message }, Cmd.none )
 
 
 

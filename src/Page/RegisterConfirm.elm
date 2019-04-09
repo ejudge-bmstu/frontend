@@ -19,13 +19,14 @@ import Html.Attributes exposing (..)
 import Html.Events exposing (..)
 import Http
 import Json.Encode as Encode
+import Page.Utils exposing (..)
 import Route
 import Session exposing (Session)
 
 
 type alias Model =
     { session : Session
-    , message : String
+    , modalMessage : ModalMessage
     }
 
 
@@ -39,34 +40,17 @@ init : Session -> Maybe String -> ( Model, Cmd Msg )
 init session maybeToken =
     case maybeToken of
         Just token ->
-            ( Model session "Подождите...", registerComplete token )
+            ( Model session (ModalMessage <| Just "Подождите..."), registerComplete token )
 
         Nothing ->
-            ( Model session "Плохая ссылка", Cmd.none )
+            ( Model session (ModalMessage <| Just "Плохая ссылка"), Cmd.none )
 
 
 view : Model -> { title : String, content : Html Msg }
 view model =
     { title = "Главная"
-    , content = mkModal "Завершение регистрации" model.message CloseModal
+    , content = divWithModal model.modalMessage CloseModal [] []
     }
-
-
-mkModal : String -> String -> Msg -> Html Msg
-mkModal header message msg =
-    Modal.config msg
-        |> Modal.small
-        |> Modal.hideOnBackdropClick False
-        |> Modal.h3 [] [ text header ]
-        |> Modal.body [] [ p [] [ text message ] ]
-        |> Modal.footer []
-            [ Button.button
-                [ Button.outlinePrimary
-                , Button.attrs [ onClick msg ]
-                ]
-                [ text "Закрыть" ]
-            ]
-        |> Modal.view Modal.shown
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -78,10 +62,10 @@ update msg model =
             )
 
         CompletedRegister (Ok _) ->
-            ( { model | message = "Учетная запись подтверждена, можете войти используя введенные данные." }, Cmd.none )
+            ( { model | modalMessage = ModalMessage <| Just "Учетная запись подтверждена, можете войти используя введенные данные." }, Cmd.none )
 
         CompletedRegister (Err error) ->
-            ( { model | message = error.message }, Cmd.none )
+            ( { model | modalMessage = ModalMessage <| Just error.message }, Cmd.none )
 
         CloseModal ->
             ( model, Route.replaceUrl (Session.navKey model.session) Route.Login )

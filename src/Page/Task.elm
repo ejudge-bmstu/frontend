@@ -35,6 +35,7 @@ import Html.Events exposing (..)
 import Http
 import Json.Decode as D exposing (Decoder)
 import List.Extra as List
+import Page.Utils exposing (..)
 import Role
 import Route
 import Session exposing (Session)
@@ -50,7 +51,7 @@ type alias Model =
     { session : Session
     , task : Maybe Task
     , file : Maybe File
-    , errorMessage : Maybe String
+    , modalMessage : ModalMessage
     , id : Uuid
     }
 
@@ -60,7 +61,7 @@ init session id =
     let
         model =
             { session = session
-            , errorMessage = Nothing
+            , modalMessage = ModalMessage Nothing
             , task = Nothing
             , file = Nothing
             , id = id
@@ -87,14 +88,13 @@ view : Model -> { title : String, content : Html Msg }
 view model =
     { title = "Добавление задачи"
     , content =
-        div []
+        divWithModal model.modalMessage CloseModal [] <|
             [ case model.task of
                 Just task ->
                     viewTask model task
 
                 Nothing ->
                     div [] []
-            , showModal model.errorMessage
             ]
     }
 
@@ -188,32 +188,6 @@ viewTask model task =
         ]
 
 
-showModal : Maybe String -> Html Msg
-showModal maybeMessage =
-    let
-        ( modalVisibility, message ) =
-            case maybeMessage of
-                Just message_ ->
-                    ( Modal.shown, message_ )
-
-                Nothing ->
-                    ( Modal.hidden, "" )
-    in
-    Modal.config CloseModal
-        |> Modal.small
-        |> Modal.hideOnBackdropClick True
-        |> Modal.h3 [] [ text "Ошибка" ]
-        |> Modal.body [] [ p [] [ text message ] ]
-        |> Modal.footer []
-            [ Button.button
-                [ Button.outlinePrimary
-                , Button.attrs [ onClick CloseModal ]
-                ]
-                [ text "Закрыть" ]
-            ]
-        |> Modal.view modalVisibility
-
-
 
 -- UPDATE
 
@@ -253,7 +227,7 @@ update msg model =
             )
 
         GotTask (Err err) ->
-            ( { model | errorMessage = Just err.message }
+            ( { model | modalMessage = ModalMessage <| Just err.message }
             , Cmd.none
             )
 
@@ -272,13 +246,13 @@ update msg model =
                     ( model, Cmd.none )
 
         SendSolutionResponse (Ok _) ->
-            ( { model | errorMessage = Just "Решение отправлено" }, Cmd.none )
+            ( { model | modalMessage = ModalMessage <| Just "Решение отправлено" }, Cmd.none )
 
         SendSolutionResponse (Err err) ->
-            ( { model | errorMessage = Just err.message }, Cmd.none )
+            ( { model | modalMessage = ModalMessage <| Just err.message }, Cmd.none )
 
         CloseModal ->
-            ( { model | errorMessage = Nothing }, Cmd.none )
+            ( { model | modalMessage = ModalMessage Nothing }, Cmd.none )
 
 
 

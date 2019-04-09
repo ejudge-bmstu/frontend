@@ -28,6 +28,7 @@ import Html.Events exposing (..)
 import Json.Decode as D exposing (Decoder)
 import Page.Category.Add as Add
 import Page.Category.Tasks as Tasks
+import Page.Utils exposing (..)
 import Role
 import Route
 import Session exposing (Session(..))
@@ -47,7 +48,7 @@ type SubPage
 type alias Model =
     { session : Session
     , categories : List Category
-    , message : Maybe String
+    , modalMessage : ModalMessage
     , subpage : Maybe SubPage
     }
 
@@ -58,7 +59,7 @@ init session =
         model =
             { session = session
             , categories = []
-            , message = Nothing
+            , modalMessage = ModalMessage Nothing
             , subpage = Nothing
             }
 
@@ -85,7 +86,7 @@ view : Model -> { title : String, content : Html Msg }
 view model =
     { title = "Задачи"
     , content =
-        div [ Spacing.m1 ]
+        divWithModal model.modalMessage CloseModal [ Spacing.m1 ] <|
             [ Grid.container
                 [ class "content", Spacing.p3 ]
                 [ Grid.row
@@ -101,7 +102,6 @@ view model =
                         [ viewSubpage model ]
                     ]
                 ]
-            , showModal model.message
             ]
     }
 
@@ -181,32 +181,6 @@ viewCategoryItem id category =
         ]
 
 
-showModal : Maybe String -> Html Msg
-showModal maybeMessage =
-    let
-        ( modalVisibility, message ) =
-            case maybeMessage of
-                Just message_ ->
-                    ( Modal.shown, message_ )
-
-                Nothing ->
-                    ( Modal.hidden, "" )
-    in
-    Modal.config CloseModal
-        |> Modal.small
-        |> Modal.hideOnBackdropClick True
-        |> Modal.h3 [] [ text "Ошибка" ]
-        |> Modal.body [] [ p [] [ text message ] ]
-        |> Modal.footer []
-            [ Button.button
-                [ Button.outlinePrimary
-                , Button.attrs [ onClick CloseModal ]
-                ]
-                [ text "Закрыть" ]
-            ]
-        |> Modal.view modalVisibility
-
-
 
 -- UPDATE
 
@@ -234,13 +208,13 @@ update msg model =
             )
 
         ( CloseModal, _ ) ->
-            ( { model | message = Nothing }, Cmd.none )
+            ( { model | modalMessage = ModalMessage Nothing }, Cmd.none )
 
         ( GotCategories (Ok categories), _ ) ->
             ( { model | categories = categories }, Cmd.none )
 
         ( GotCategories (Err err), _ ) ->
-            ( { model | message = Just err.message }, Cmd.none )
+            ( { model | modalMessage = ModalMessage <| Just err.message }, Cmd.none )
 
         ( ShowTasks id, _ ) ->
             let

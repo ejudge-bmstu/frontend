@@ -34,6 +34,7 @@ import Html.Events exposing (..)
 import Http
 import Json.Decode as D exposing (Decoder)
 import List.Extra as List
+import Page.Utils exposing (..)
 import Role
 import Route
 import Session exposing (Session)
@@ -49,7 +50,7 @@ type alias Model =
     { session : Session
     , task : Task
     , categories : List Category
-    , errorMessage : Maybe String
+    , modalMessage : ModalMessage
     }
 
 
@@ -130,7 +131,7 @@ init session =
         model =
             { session = session
             , categories = []
-            , errorMessage = Nothing
+            , modalMessage = ModalMessage Nothing
             , task =
                 { name = ""
                 , description = ""
@@ -165,14 +166,13 @@ view : Model -> { title : String, content : Html Msg }
 view model =
     { title = "Добавление задачи"
     , content =
-        div [ Spacing.mt3 ]
+        divWithModal model.modalMessage CloseModal [ Spacing.mt3 ] <|
             [ case model.categories of
                 [] ->
                     div [] []
 
                 _ ->
                     viewForm model
-            , showModal model.errorMessage
             ]
     }
 
@@ -427,7 +427,7 @@ update msg model =
             )
 
         GotCategories (Err error) ->
-            ( { model | errorMessage = Just error.message }
+            ( { model | modalMessage = ModalMessage <| Just error.message }
             , Cmd.none
             )
 
@@ -515,16 +515,16 @@ update msg model =
                     ( model, sendTask (Session.cred model.session) validTask )
 
                 Nothing ->
-                    ( { model | errorMessage = Just "Не все данные введены" }, Cmd.none )
+                    ( { model | modalMessage = ModalMessage <| Just "Не все данные введены" }, Cmd.none )
 
         SendTaskResponse (Ok _) ->
             ( model, Cmd.none )
 
         SendTaskResponse (Err err) ->
-            ( { model | errorMessage = Just err.message }, Cmd.none )
+            ( { model | modalMessage = ModalMessage <| Just err.message }, Cmd.none )
 
         CloseModal ->
-            ( { model | errorMessage = Nothing }, Cmd.none )
+            ( { model | modalMessage = ModalMessage Nothing }, Cmd.none )
 
         EnterInput ix inp ->
             let

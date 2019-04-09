@@ -20,6 +20,7 @@ import Html.Attributes exposing (..)
 import Html.Events exposing (..)
 import Http
 import Json.Encode as Encode
+import Page.Utils exposing (..)
 import Role
 import Route
 import Session exposing (Session(..))
@@ -33,7 +34,7 @@ import Viewer exposing (Viewer)
 type alias Model =
     { session : Session
     , category : String
-    , message : Maybe String
+    , modalMessage : ModalMessage
     }
 
 
@@ -43,7 +44,7 @@ init session =
         model =
             { session = session
             , category = ""
-            , message = Nothing
+            , modalMessage = ModalMessage Nothing
             }
 
         role =
@@ -65,7 +66,9 @@ init session =
 
 view : Model -> Html Msg
 view model =
-    div []
+    divWithModal model.modalMessage
+        CloseModal
+        []
         [ Form.form []
             [ h4 [] [ text "Добавление категории" ]
             , Form.group []
@@ -77,34 +80,7 @@ view model =
                 ]
             , Button.button [ Button.primary, Button.onClick SubmittedForm ] [ text "Добавить" ]
             ]
-        , showModal model.message
         ]
-
-
-showModal : Maybe String -> Html Msg
-showModal maybeMessage =
-    let
-        ( modalVisibility, message ) =
-            case maybeMessage of
-                Just message_ ->
-                    ( Modal.shown, message_ )
-
-                Nothing ->
-                    ( Modal.hidden, "" )
-    in
-    Modal.config CloseModal
-        |> Modal.small
-        |> Modal.hideOnBackdropClick True
-        |> Modal.h3 [] [ text "Ошибка" ]
-        |> Modal.body [] [ p [] [ text message ] ]
-        |> Modal.footer []
-            [ Button.button
-                [ Button.outlinePrimary
-                , Button.attrs [ onClick CloseModal ]
-                ]
-                [ text "Закрыть" ]
-            ]
-        |> Modal.view modalVisibility
 
 
 
@@ -135,12 +111,12 @@ update msg model =
             ( { model | category = category }, Cmd.none )
 
         Added (Ok viewer) ->
-            ( { model | message = Just ("Категория " ++ model.category ++ " добавлена!"), category = "" }
+            ( { model | modalMessage = ModalMessage <| Just ("Категория " ++ model.category ++ " добавлена!"), category = "" }
             , Cmd.none
             )
 
         Added (Err error) ->
-            ( { model | message = Just error.message }
+            ( { model | modalMessage = ModalMessage <| Just error.message }
             , Cmd.none
             )
 
@@ -150,7 +126,7 @@ update msg model =
             )
 
         CloseModal ->
-            ( { model | message = Nothing }, Cmd.none )
+            ( { model | modalMessage = ModalMessage Nothing }, Cmd.none )
 
 
 
