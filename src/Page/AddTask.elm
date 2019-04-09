@@ -368,7 +368,7 @@ showModal maybeMessage =
     Modal.config CloseModal
         |> Modal.small
         |> Modal.hideOnBackdropClick True
-        |> Modal.h3 [] [ text "Ошибка" ]
+        |> Modal.h3 [] [ text "Сообщение" ]
         |> Modal.body [] [ p [] [ text message ] ]
         |> Modal.footer []
             [ Button.button
