@@ -1,4 +1,4 @@
-module Page.Category.Tasks exposing
+module Page.TaskList.Category exposing
     ( Model
     , Msg(..)
     , init

@@ -12,13 +12,13 @@ import Json.Decode as Decode exposing (Value)
 import Page exposing (Page)
 import Page.AddTask as AddTask
 import Page.Blank as Blank
-import Page.Category as Category
 import Page.Login as Login
 import Page.NotFound as NotFound
 import Page.Register as Register
 import Page.RegisterConfirm as RegisterConfirm
 import Page.Root as Root
 import Page.Task as Task
+import Page.TaskList as TaskList
 import Page.TaskResults as TaskResults
 import Route exposing (Route)
 import Session exposing (Session(..))
@@ -40,7 +40,7 @@ type Page
     | Login Login.Model
     | Register Register.Model
     | RegisterConfirm RegisterConfirm.Model
-    | Category Category.Model
+    | TaskList TaskList.Model
     | Task Task.Model
     | AddTask AddTask.Model
     | TaskResults TaskResults.Model
@@ -112,8 +112,8 @@ view model =
         RegisterConfirm register ->
             viewPage Page.RegisterConfirm RegisterConfirmMsg (RegisterConfirm.view register) True
 
-        Category category ->
-            viewPage Page.Category CategoryMsg (Category.view category) True
+        TaskList taskList ->
+            viewPage Page.TaskList TaskListMsg (TaskList.view taskList) True
 
         Task task ->
             viewPage Page.Task TaskMsg (Task.view task) True
@@ -138,7 +138,7 @@ type Msg
     | LoginMsg Login.Msg
     | RegisterMsg Register.Msg
     | RegisterConfirmMsg RegisterConfirm.Msg
-    | CategoryMsg Category.Msg
+    | TaskListMsg TaskList.Msg
     | NavbarMsg Navbar.State
     | DropdownMsg Dropdown.State
     | TaskMsg Task.Msg
@@ -167,8 +167,8 @@ toSession model =
         RegisterConfirm register ->
             RegisterConfirm.toSession register
 
-        Category category ->
-            Category.toSession category
+        TaskList taskList ->
+            TaskList.toSession taskList
 
         Task task ->
             Task.toSession task
@@ -212,9 +212,9 @@ changeRouteTo maybeRoute model =
         Just Route.Logout ->
             ( model, Api.logout )
 
-        Just Route.Category ->
-            Category.init session
-                |> updateWith model Category CategoryMsg
+        Just Route.TaskList ->
+            TaskList.init session
+                |> updateWith model TaskList TaskListMsg
 
         Just (Route.Task id) ->
             Task.init session id
@@ -269,9 +269,9 @@ update msg model =
             RegisterConfirm.update subMsg register
                 |> updateWith model RegisterConfirm RegisterConfirmMsg
 
-        ( CategoryMsg subMsg, Category category ) ->
-            Category.update subMsg category
-                |> updateWith model Category CategoryMsg
+        ( TaskListMsg subMsg, TaskList taskList ) ->
+            TaskList.update subMsg taskList
+                |> updateWith model TaskList TaskListMsg
 
         ( TaskMsg subMsg, Task task ) ->
             Task.update subMsg task
@@ -331,8 +331,8 @@ subscriptions model =
                 RegisterConfirm register ->
                     Sub.map RegisterConfirmMsg (RegisterConfirm.subscriptions register)
 
-                Category category ->
-                    Sub.map CategoryMsg (Category.subscriptions category)
+                TaskList taskList ->
+                    Sub.map TaskListMsg (TaskList.subscriptions taskList)
 
                 Task task ->
                     Sub.map TaskMsg (Task.subscriptions task)

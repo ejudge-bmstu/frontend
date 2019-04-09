@@ -26,7 +26,7 @@ type Page
     | Login
     | Register
     | RegisterConfirm
-    | Category
+    | TaskList
     | Task
     | AddTask
     | UserResults

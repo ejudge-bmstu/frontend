@@ -28,7 +28,7 @@ type Route
     | Logout
     | Register
     | RegisterConfirm (Maybe String)
-    | Category
+    | TaskList
     | Task Uuid
     | AddTask
     | UserResults
@@ -62,7 +62,7 @@ parser =
         , Parser.map Logout (s "logout")
         , Parser.map Register (s "register")
         , Parser.map RegisterConfirm (s "register" </> s "confirm" <?> string "token")
-        , Parser.map Category (s "task" </> s "list")
+        , Parser.map TaskList (s "task" </> s "list")
         , Parser.map AddTask (s "task" </> s "add")
         , Parser.map mkTaskRoute (s "task" </> uuid)
         , Parser.map UserResults (s "user" </> s "results")
@@ -113,8 +113,8 @@ routeToString page =
         RegisterConfirm _ ->
             Builder.relative [ "register", "confirm" ] []
 
-        Category ->
-            Builder.relative [ "tasks" ] []
+        TaskList ->
+            Builder.relative [ "task", "list" ] []
 
         Task id ->
             Builder.relative [ "task", Uuid.toString id ] []
