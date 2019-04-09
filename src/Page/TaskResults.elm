@@ -11,24 +11,16 @@ module Page.TaskResults exposing
 import Api
 import Api.Endpoint as Endpoint
 import Bootstrap.Accordion as Accordion
-import Bootstrap.Button as Button
-import Bootstrap.Card as Card
 import Bootstrap.Card.Block as Block
-import Bootstrap.Form as Form
-import Bootstrap.Form.Input as Input
 import Bootstrap.Grid as Grid
 import Bootstrap.Grid.Col as Col
-import Bootstrap.Grid.Row as Row
-import Bootstrap.Modal as Modal
-import Bootstrap.Table as Table
-import Bootstrap.Text as Text
-import Bootstrap.Utilities.Size as Size
 import Cred exposing (Cred)
+import Data.Date exposing (..)
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
-import Http
 import Json.Decode as D exposing (Decoder)
+import Page.Utils exposing (..)
 import Route
 import Session exposing (Session)
 import Task
@@ -45,8 +37,8 @@ type alias Model =
     { zone : Time.Zone
     , session : Session
     , tasksResults : Maybe TasksResults
-    , errorMessage : Maybe String
     , accordionState : Accordion.State
+    , modalMessage : ModalMessage
     }
 
 
@@ -110,9 +102,9 @@ init : Session -> ( Model, Cmd Msg )
 init session =
     ( { session = session
       , tasksResults = Nothing
-      , errorMessage = Nothing
       , accordionState = Accordion.initialState
       , zone = Time.utc
+      , modalMessage = ModalMessage Nothing
       }
     , Cmd.batch
         [ getResults (Session.cred session)
@@ -129,14 +121,13 @@ view : Model -> { title : String, content : Html Msg }
 view model =
     { title = "Задача"
     , content =
-        div []
+        divWithModal model.modalMessage CloseModal [] <|
             [ case model.tasksResults of
                 Just task ->
                     viewTask model task
 
                 Nothing ->
                     div [] []
-            , showModal model.errorMessage
             ]
     }
 
@@ -150,7 +141,6 @@ viewTask model tasksResults =
                     |> Accordion.withAnimation
                     |> (Accordion.cards <| List.indexedMap (taskView model) tasksResults)
                     |> Accordion.view model.accordionState
-                , showModal model.errorMessage
                 ]
             ]
         ]
@@ -190,60 +180,6 @@ taskView model ix task =
         }
 
 
-monthToInt m =
-    case m of
-        Time.Jan ->
-            1
-
-        Time.Feb ->
-            2
-
-        Time.Mar ->
-            3
-
-        Time.Apr ->
-            4
-
-        Time.May ->
-            5
-
-        Time.Jun ->
-            6
-
-        Time.Jul ->
-            7
-
-        Time.Aug ->
-            8
-
-        Time.Sep ->
-            9
-
-        Time.Oct ->
-            10
-
-        Time.Nov ->
-            11
-
-        Time.Dec ->
-            12
-
-
-mkDate : Time.Zone -> Time.Posix -> String
-mkDate zone posix =
-    let
-        day =
-            String.fromInt <| Time.toDay zone posix
-
-        month =
-            String.fromInt << monthToInt <| Time.toMonth zone posix
-
-        year =
-            String.fromInt <| Time.toYear zone posix
-    in
-    day ++ "/" ++ month ++ "/" ++ year
-
-
 mkResult : Maybe Int -> Int -> String
 mkResult passed_ total_ =
     let
@@ -254,32 +190,6 @@ mkResult passed_ total_ =
             String.fromInt total_
     in
     passed ++ "/" ++ total
-
-
-showModal : Maybe String -> Html Msg
-showModal maybeMessage =
-    let
-        ( modalVisibility, message ) =
-            case maybeMessage of
-                Just message_ ->
-                    ( Modal.shown, message_ )
-
-                Nothing ->
-                    ( Modal.hidden, "" )
-    in
-    Modal.config CloseModal
-        |> Modal.small
-        |> Modal.hideOnBackdropClick True
-        |> Modal.h3 [] [ text "Ошибка" ]
-        |> Modal.body [] [ p [] [ text message ] ]
-        |> Modal.footer []
-            [ Button.button
-                [ Button.outlinePrimary
-                , Button.attrs [ onClick CloseModal ]
-                ]
-                [ text "Закрыть" ]
-            ]
-        |> Modal.view modalVisibility
 
 
 
@@ -303,7 +213,7 @@ update msg model =
             )
 
         GotTasksResults (Err error) ->
-            ( { model | errorMessage = Just error.message }
+            ( { model | modalMessage = ModalMessage <| Just error.message }
             , Cmd.none
             )
 
@@ -313,7 +223,7 @@ update msg model =
             )
 
         CloseModal ->
-            ( { model | errorMessage = Nothing }, Cmd.none )
+            ( { model | modalMessage = ModalMessage Nothing }, Cmd.none )
 
         AccordionMsg state ->
             ( { model | accordionState = state }

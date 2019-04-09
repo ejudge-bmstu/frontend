@@ -12,7 +12,6 @@ import Api
 import Api.Endpoint as Endpoint
 import Bootstrap.Button as Button
 import Bootstrap.Form as Form
-import Bootstrap.Form.Checkbox as Checkbox
 import Bootstrap.Form.Input as Input
 import Bootstrap.Form.Select as Select
 import Bootstrap.Form.Textarea as Textarea
@@ -20,11 +19,9 @@ import Bootstrap.Grid as Grid
 import Bootstrap.Grid.Col as Col
 import Bootstrap.Grid.Row as Row
 import Bootstrap.Modal as Modal
-import Bootstrap.Table as Table
-import Bootstrap.Text as Text
-import Bootstrap.Utilities.Size as Size
 import Bootstrap.Utilities.Spacing as Spacing
 import Cred exposing (Cred)
+import Data.ReportAccess exposing (..)
 import File exposing (File)
 import File.Select as File
 import Html exposing (..)
@@ -33,6 +30,7 @@ import Html.Events exposing (..)
 import Http
 import Json.Decode as D exposing (Decoder)
 import List.Extra as List
+import Page.Utils exposing (..)
 import Role
 import Route
 import Session exposing (Session)
@@ -48,7 +46,7 @@ type alias Model =
     { session : Session
     , task : Task
     , categories : List Category
-    , errorMessage : Maybe String
+    , modalMessage : ModalMessage
     }
 
 
@@ -78,48 +76,10 @@ type alias ValidTask =
     }
 
 
-type ReportAccess
-    = FullAccess
-    | NoAccess
-
-
 type alias ExampleTest =
     { input : String
     , output : String
     }
-
-
-reportAccessToString : ReportAccess -> String
-reportAccessToString ra =
-    case ra of
-        FullAccess ->
-            "full_access"
-
-        NoAccess ->
-            "no_access"
-
-
-reportAccessPrettyPrint : ReportAccess -> String
-reportAccessPrettyPrint ra =
-    case ra of
-        FullAccess ->
-            "Полный доступ"
-
-        NoAccess ->
-            "Ограниченный доступ"
-
-
-reportAccessFromString : String -> Maybe ReportAccess
-reportAccessFromString ra =
-    case ra of
-        "full_access" ->
-            Just FullAccess
-
-        "no_access" ->
-            Just NoAccess
-
-        _ ->
-            Nothing
 
 
 type alias Category =
@@ -167,7 +127,7 @@ init session =
         model =
             { session = session
             , categories = []
-            , errorMessage = Nothing
+            , modalMessage = ModalMessage Nothing
             , task =
                 { name = ""
                 , description = ""
@@ -202,14 +162,13 @@ view : Model -> { title : String, content : Html Msg }
 view model =
     { title = "Добавление задачи"
     , content =
-        div [ Spacing.mt3 ]
+        divWithModal model.modalMessage CloseModal [ Spacing.mt3 ] <|
             [ case model.categories of
                 [] ->
                     div [] []
 
                 _ ->
                     viewForm model
-            , showModal model.errorMessage
             ]
     }
 
@@ -409,7 +368,7 @@ showModal maybeMessage =
     Modal.config CloseModal
         |> Modal.small
         |> Modal.hideOnBackdropClick True
-        |> Modal.h3 [] [ text "Ошибка" ]
+        |> Modal.h3 [] [ text "Сообщение" ]
         |> Modal.body [] [ p [] [ text message ] ]
         |> Modal.footer []
             [ Button.button
@@ -464,7 +423,7 @@ update msg model =
             )
 
         GotCategories (Err error) ->
-            ( { model | errorMessage = Just error.message }
+            ( { model | modalMessage = ModalMessage <| Just error.message }
             , Cmd.none
             )
 
@@ -552,16 +511,16 @@ update msg model =
                     ( model, sendTask (Session.cred model.session) validTask )
 
                 Nothing ->
-                    ( { model | errorMessage = Just "Не все данные введены" }, Cmd.none )
+                    ( { model | modalMessage = ModalMessage <| Just "Не все данные введены" }, Cmd.none )
 
         SendTaskResponse (Ok _) ->
             ( model, Cmd.none )
 
         SendTaskResponse (Err err) ->
-            ( { model | errorMessage = Just err.message }, Cmd.none )
+            ( { model | modalMessage = ModalMessage <| Just err.message }, Cmd.none )
 
         CloseModal ->
-            ( { model | errorMessage = Nothing }, Cmd.none )
+            ( { model | modalMessage = ModalMessage Nothing }, Cmd.none )
 
         EnterInput ix inp ->
             let

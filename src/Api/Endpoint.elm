@@ -16,8 +16,8 @@ module Api.Endpoint exposing
     )
 
 import Http
-import Url.Builder exposing (QueryParameter, int, string)
-import Uuid exposing (Uuid, toString)
+import Url.Builder exposing (int, QueryParameter, string)
+import Uuid exposing (Uuid)
 
 
 request :

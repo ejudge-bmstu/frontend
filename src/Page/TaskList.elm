@@ -1,4 +1,4 @@
-module Page.Category exposing
+module Page.TaskList exposing
     ( Model
     , Msg(..)
     , init
@@ -15,18 +15,18 @@ import Bootstrap.Button as Button
 import Bootstrap.Grid as Grid
 import Bootstrap.Grid.Col as Col
 import Bootstrap.ListGroup as ListGroup
-import Bootstrap.Modal as Modal
-import Bootstrap.Text as Text
 import Bootstrap.Utilities.Flex as Flex
 import Bootstrap.Utilities.Size as Size
 import Bootstrap.Utilities.Spacing as Spacing
 import Cred exposing (Cred)
+import Data.Category exposing (..)
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
 import Json.Decode as D exposing (Decoder)
-import Page.Category.Add as Add
-import Page.Category.Tasks as Tasks
+import Page.TaskList.AddCategory as AddCategory
+import Page.TaskList.Category as Category
+import Page.Utils exposing (..)
 import Role
 import Route
 import Session exposing (Session(..))
@@ -39,14 +39,14 @@ import Viewer exposing (Viewer)
 
 
 type SubPage
-    = Tasks Tasks.Model
-    | Add Add.Model
+    = Category Category.Model
+    | AddCategory AddCategory.Model
 
 
 type alias Model =
     { session : Session
     , categories : List Category
-    , message : Maybe String
+    , modalMessage : ModalMessage
     , subpage : Maybe SubPage
     }
 
@@ -54,18 +54,10 @@ type alias Model =
 init : Session -> ( Model, Cmd Msg )
 init session =
     let
-        -- subpageInit =
-        --     Maybe.map (Tasks.init session page) categoryId
-        -- ( subpage, subCmd ) =
-        --     case subpageInit of
-        --         Just ( subpage_, subCmd_ ) ->
-        --             ( Just (Tasks subpage_), subCmd_ )
-        --         Nothing ->
-        --             ( Nothing, Cmd.none )
         model =
             { session = session
             , categories = []
-            , message = Nothing
+            , modalMessage = ModalMessage Nothing
             , subpage = Nothing
             }
 
@@ -92,7 +84,7 @@ view : Model -> { title : String, content : Html Msg }
 view model =
     { title = "Задачи"
     , content =
-        div [ Spacing.m1 ]
+        divWithModal model.modalMessage CloseModal [ Spacing.m1 ] <|
             [ Grid.container
                 [ class "content", Spacing.p3 ]
                 [ Grid.row
@@ -108,7 +100,6 @@ view model =
                         [ viewSubpage model ]
                     ]
                 ]
-            , showModal model.message
             ]
     }
 
@@ -143,7 +134,7 @@ viewCategoryList model =
     let
         activeId =
             case model.subpage of
-                Just (Tasks tasks) ->
+                Just (Category tasks) ->
                     tasks.id
 
                 _ ->
@@ -159,11 +150,11 @@ viewSubpage model =
         Nothing ->
             div [] [ text "выберите категорию" ]
 
-        Just (Tasks tasks) ->
-            Html.map TasksMsg <| Tasks.view tasks
+        Just (Category tasks) ->
+            Html.map CategoryMsg <| Category.view tasks
 
-        Just (Add add) ->
-            Html.map AddMsg <| Add.view add
+        Just (AddCategory add) ->
+            Html.map AddCategoryMsg <| AddCategory.view add
 
 
 viewCategoryItem : Maybe Uuid -> Category -> ListGroup.CustomItem Msg
@@ -188,32 +179,6 @@ viewCategoryItem id category =
         ]
 
 
-showModal : Maybe String -> Html Msg
-showModal maybeMessage =
-    let
-        ( modalVisibility, message ) =
-            case maybeMessage of
-                Just message_ ->
-                    ( Modal.shown, message_ )
-
-                Nothing ->
-                    ( Modal.hidden, "" )
-    in
-    Modal.config CloseModal
-        |> Modal.small
-        |> Modal.hideOnBackdropClick True
-        |> Modal.h3 [] [ text "Ошибка" ]
-        |> Modal.body [] [ p [] [ text message ] ]
-        |> Modal.footer []
-            [ Button.button
-                [ Button.outlinePrimary
-                , Button.attrs [ onClick CloseModal ]
-                ]
-                [ text "Закрыть" ]
-            ]
-        |> Modal.view modalVisibility
-
-
 
 -- UPDATE
 
@@ -223,9 +188,9 @@ type Msg
     | CloseModal
     | GotCategories (Api.Response (List Category))
     | ShowTasks (Maybe Uuid)
-    | TasksMsg Tasks.Msg
+    | CategoryMsg Category.Msg
     | ShowAddTask
-    | AddMsg Add.Msg
+    | AddCategoryMsg AddCategory.Msg
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -241,79 +206,79 @@ update msg model =
             )
 
         ( CloseModal, _ ) ->
-            ( { model | message = Nothing }, Cmd.none )
+            ( { model | modalMessage = ModalMessage Nothing }, Cmd.none )
 
         ( GotCategories (Ok categories), _ ) ->
             ( { model | categories = categories }, Cmd.none )
 
         ( GotCategories (Err err), _ ) ->
-            ( { model | message = Just err.message }, Cmd.none )
+            ( { model | modalMessage = ModalMessage <| Just err.message }, Cmd.none )
 
         ( ShowTasks id, _ ) ->
             let
                 ( subpage, cmd ) =
-                    Tasks.init model.session id
+                    Category.init model.session id
             in
-            ( { model | subpage = Just <| Tasks subpage }
-            , Cmd.map TasksMsg cmd
+            ( { model | subpage = Just <| Category subpage }
+            , Cmd.map CategoryMsg cmd
             )
 
-        ( TasksMsg (Tasks.SaveResponse (Ok x)), Just (Tasks tasks) ) ->
+        ( CategoryMsg (Category.SaveResponse (Ok x)), Just (Category tasks) ) ->
             let
                 ( subpage, cmd ) =
-                    Tasks.update (Tasks.SaveResponse (Ok x)) tasks
+                    Category.update (Category.SaveResponse (Ok x)) tasks
             in
-            ( { model | subpage = Just <| Tasks subpage }
+            ( { model | subpage = Just <| Category subpage }
             , Cmd.batch
                 [ getCategories <| Session.cred model.session
-                , Cmd.map TasksMsg cmd
+                , Cmd.map CategoryMsg cmd
                 ]
             )
 
-        ( TasksMsg (Tasks.DeleteResponse (Ok x)), Just (Tasks tasks) ) ->
+        ( CategoryMsg (Category.DeleteResponse (Ok x)), Just (Category tasks) ) ->
             ( { model | subpage = Nothing }
             , getCategories <| Session.cred model.session
             )
 
-        ( TasksMsg tasksMsg, Just (Tasks tasks) ) ->
+        ( CategoryMsg tasksMsg, Just (Category tasks) ) ->
             let
                 ( subpage, cmd ) =
-                    Tasks.update tasksMsg tasks
+                    Category.update tasksMsg tasks
             in
-            ( { model | subpage = Just <| Tasks subpage }, Cmd.map TasksMsg cmd )
+            ( { model | subpage = Just <| Category subpage }, Cmd.map CategoryMsg cmd )
 
         ( ShowAddTask, _ ) ->
             let
                 ( subpage, cmd ) =
-                    Add.init model.session
+                    AddCategory.init model.session
             in
-            ( { model | subpage = Just <| Add subpage }
+            ( { model | subpage = Just <| AddCategory subpage }
             , Cmd.batch
-                [ Cmd.map AddMsg cmd
+                [ Cmd.map AddCategoryMsg cmd
                 ]
             )
 
-        ( AddMsg (Add.Added (Ok cat)), Just (Add add) ) ->
+        ( AddCategoryMsg (AddCategory.Added (Ok cat)), Just (AddCategory add) ) ->
             let
                 addMsg =
-                    Add.Added (Ok cat)
+                    AddCategory.Added (Ok cat)
 
                 ( subpage, cmd ) =
-                    Add.update addMsg add
+                    AddCategory.update addMsg add
             in
-            ( { model | subpage = Just <| Add subpage }
+            ( { model | subpage = Just <| AddCategory subpage }
             , Cmd.batch
                 [ getCategories <| Session.cred model.session
-                , Cmd.map AddMsg cmd
+                , Cmd.map AddCategoryMsg cmd
                 ]
             )
 
-        ( AddMsg addMsg, Just (Add add) ) ->
+        ( AddCategoryMsg addMsg, Just (AddCategory add) ) ->
             let
                 ( subpage, cmd ) =
-                    Add.update addMsg add
+                    AddCategory.update addMsg add
             in
-            ( { model | subpage = Just <| Add subpage }, Cmd.map AddMsg cmd )
+            ( { model | subpage = Just <| AddCategory subpage }, Cmd.map AddCategoryMsg cmd )
 
         ( _, _ ) ->
             ( model, Cmd.none )
@@ -326,21 +291,6 @@ update msg model =
 subscriptions : Model -> Sub Msg
 subscriptions model =
     Session.changes GotSession (Session.navKey model.session)
-
-
-type alias Category =
-    { id : Uuid
-    , name : String
-    , count : Int
-    }
-
-
-categoryDecoder : Decoder Category
-categoryDecoder =
-    D.map3 Category
-        (D.field "id" Uuid.decoder)
-        (D.field "name" D.string)
-        (D.field "count" D.int)
 
 
 categoriesDecoder : Decoder (List Category)

@@ -12,20 +12,22 @@ import Api
 import Api.Endpoint as Endpoint
 import Bootstrap.Button as Button
 import Bootstrap.Form as Form
-import Bootstrap.Form.Input as Input
 import Bootstrap.Grid as Grid
 import Bootstrap.Grid.Col as Col
 import Bootstrap.Grid.Row as Row
-import Bootstrap.Modal as Modal
 import Bootstrap.Table as Table
-import Bootstrap.Text as Text
-import Bootstrap.Utilities.Size as Size
 import Cred exposing (Cred)
+import Data.ReportAccess exposing (..)
+import Data.Task exposing (..)
+import File exposing (File)
+import File.Select as File
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
 import Http
-import Json.Decode as D exposing (Decoder)
+import List.Extra as List
+import Page.Utils exposing (..)
+import Role
 import Route
 import Session exposing (Session)
 import Uuid exposing (Uuid)
@@ -38,66 +40,35 @@ import Viewer exposing (Viewer)
 
 type alias Model =
     { session : Session
-    , id : Uuid
     , task : Maybe Task
-    , errorMessage : Maybe String
+    , file : Maybe File
+    , modalMessage : ModalMessage
+    , id : Uuid
     }
 
 
-type alias Task =
-    { name : String
-    , description : String
-    , category : Maybe Category
-    , limits : List Limit
-    }
+init : Session -> Uuid -> ( Model, Cmd Msg )
+init session id =
+    let
+        model =
+            { session = session
+            , modalMessage = ModalMessage Nothing
+            , task = Nothing
+            , file = Nothing
+            , id = id
+            }
 
+        role =
+            Session.role session
 
-taskDecoder : Decoder Task
-taskDecoder =
-    D.map4 Task
-        (D.field "name" D.string)
-        (D.field "description" D.string)
-        (D.field "category" (D.maybe categoryDecoder))
-        (D.field "limits" (D.list limitDecoder))
+        navKey =
+            Session.navKey session
+    in
+    if Role.hasUserAccess role then
+        ( model, getTask (Session.cred session) id )
 
-
-type alias Category =
-    { id : Uuid
-    , name : String
-    }
-
-
-categoryDecoder : Decoder Category
-categoryDecoder =
-    D.map2 Category
-        (D.field "id" Uuid.decoder)
-        (D.field "name" D.string)
-
-
-type alias Limit =
-    { language : String
-    , memory : Int
-    , time : Int
-    }
-
-
-limitDecoder : Decoder Limit
-limitDecoder =
-    D.map3 Limit
-        (D.field "language" D.string)
-        (D.field "memory" D.int)
-        (D.field "time" D.int)
-
-
-init : Uuid -> Session -> ( Model, Cmd Msg )
-init id session =
-    ( { session = session
-      , id = id
-      , task = Nothing
-      , errorMessage = Nothing
-      }
-    , getTask id (Session.cred session)
-    )
+    else
+        ( model, Route.replaceUrl navKey Route.NotFound )
 
 
 
@@ -106,124 +77,173 @@ init id session =
 
 view : Model -> { title : String, content : Html Msg }
 view model =
-    { title = "Задача"
+    { title = "Добавление задачи"
     , content =
-        div []
+        divWithModal model.modalMessage CloseModal [] <|
             [ case model.task of
                 Just task ->
-                    viewTask task
+                    viewTask model task
 
                 Nothing ->
                     div [] []
-            , showModal model.errorMessage
             ]
     }
 
 
-viewTask : Task -> Html Msg
-viewTask task =
+viewTask : Model -> Task -> Html Msg
+viewTask model task =
     let
-        cat =
-            case task.category of
-                Just cat_ ->
-                    [ p []
-                        [ text <| "Категория: " ++ cat_.name
-                        ]
-                    ]
+        buttonFiles =
+            case model.file of
+                Just file ->
+                    File.name file
 
                 Nothing ->
-                    []
+                    "Выбрать"
     in
     Grid.container []
         [ Grid.row []
-            [ Grid.col [] <|
-                [ h3 [] [ text task.name ]
-                , p [] [ text task.description ]
-                ]
-                    ++ cat
-                    ++ [ h4 [] [ text "Ограничения" ]
-                       , Table.table
-                            { options = [ Table.striped, Table.hover ]
-                            , thead =
-                                Table.simpleThead
-                                    [ Table.th [] [ text "" ]
-                                    , Table.th [] [ text "Ограничение по времени (с)" ]
-                                    , Table.th [] [ text "Ограничние по памяти (Мб)" ]
+            [ Grid.col [ Col.md12 ]
+                [ h2 [] [ text task.name ] ]
+            ]
+        , Grid.row []
+            [ Grid.col [ Col.md12 ]
+                [ p [] [ text task.description ] ]
+            ]
+        , Grid.row []
+            [ Grid.col [ Col.md12 ]
+                [ p [] [ text <| reportAccessPrettyPrint task.access ] ]
+            ]
+        , Grid.row []
+            [ Grid.col [ Col.md12 ]
+                [ p [] [ text task.category.name ] ]
+            ]
+        , Grid.row []
+            [ Grid.col [ Col.md12 ]
+                [ Table.simpleTable
+                    ( Table.simpleThead
+                        [ Table.th [] [ text "Пример входных данных" ]
+                        , Table.th [] [ text "Пример выходных данных" ]
+                        ]
+                    , Table.tbody [] <|
+                        List.map
+                            (\x ->
+                                Table.tr []
+                                    [ Table.td [] [ text x.input ]
+                                    , Table.td [] [ text x.output ]
                                     ]
-                            , tbody =
-                                Table.tbody [] <|
-                                    List.map mkTr task.limits
-                            }
-                       ]
-            ]
-        ]
-
-
-mkTr : Limit -> Table.Row Msg
-mkTr limit =
-    Table.tr []
-        [ Table.td [] [ text limit.language ]
-        , Table.td [] [ text <| String.fromInt limit.time ]
-        , Table.td [] [ text <| String.fromInt limit.memory ]
-        ]
-
-
-showModal : Maybe String -> Html Msg
-showModal maybeMessage =
-    let
-        ( modalVisibility, message ) =
-            case maybeMessage of
-                Just message_ ->
-                    ( Modal.shown, message_ )
-
-                Nothing ->
-                    ( Modal.hidden, "" )
-    in
-    Modal.config CloseModal
-        |> Modal.small
-        |> Modal.hideOnBackdropClick True
-        |> Modal.h3 [] [ text "Ошибка" ]
-        |> Modal.body [] [ p [] [ text message ] ]
-        |> Modal.footer []
-            [ Button.button
-                [ Button.outlinePrimary
-                , Button.attrs [ onClick CloseModal ]
+                            )
+                            task.examples
+                    )
                 ]
-                [ text "Закрыть" ]
             ]
-        |> Modal.view modalVisibility
+        , Grid.row []
+            [ Grid.col [ Col.md12 ]
+                [ Table.simpleTable
+                    ( Table.simpleThead
+                        [ Table.th [] [ text "" ]
+                        , Table.th [] [ text "Ограничение по времени" ]
+                        , Table.th [] [ text "Ограничение по памяти" ]
+                        ]
+                    , Table.tbody [] <|
+                        List.map
+                            (\x ->
+                                Table.tr []
+                                    [ Table.td [] [ text x.language ]
+                                    , Table.td [] [ text <| String.fromInt x.time ]
+                                    , Table.td [] [ text <| String.fromInt x.memory ]
+                                    ]
+                            )
+                            task.limits
+                    )
+                ]
+            ]
+        , Form.row []
+            [ Form.colLabel [ Col.sm2 ] [ text "Решение" ]
+            , Form.col [ Col.sm2 ]
+                [ Button.button
+                    [ Button.primary, Button.onClick SolutionEntered ]
+                    [ text buttonFiles ]
+                ]
+            ]
+        , Form.row [ Row.rightSm ]
+            [ Form.col [ Col.sm2 ]
+                [ Button.button
+                    [ Button.primary
+                    , Button.attrs [ class "float-right" ]
+                    , Button.onClick SendSolution
+                    ]
+                    [ text "Отправить" ]
+                ]
+            ]
+        ]
 
 
 
 -- UPDATE
 
 
+type Language
+    = Python
+    | C
+    | Cpp
+
+
+type LimitType
+    = Memory
+    | Time
+
+
 type Msg
-    = GotTask (Api.Response Task)
-    | GotSession Session
+    = GotSession Session
+    | GotTask (Api.Response Task)
+    | SolutionEntered
+    | SolutionSelected File
+    | SendSolution
+    | SendSolutionResponse (Api.Response ())
     | CloseModal
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        GotTask (Ok task) ->
-            ( { model | task = Just task }
-            , Cmd.none
-            )
-
-        GotTask (Err error) ->
-            ( { model | errorMessage = Just error.message }
-            , Cmd.none
-            )
-
         GotSession session ->
             ( { model | session = session }
             , Route.replaceUrl (Session.navKey session) Route.Root
             )
 
+        GotTask (Ok task) ->
+            ( { model | task = Just task }
+            , Cmd.none
+            )
+
+        GotTask (Err err) ->
+            ( { model | modalMessage = ModalMessage <| Just err.message }
+            , Cmd.none
+            )
+
+        SolutionEntered ->
+            ( model, File.file [] SolutionSelected )
+
+        SolutionSelected file ->
+            ( { model | file = Just file }, Cmd.none )
+
+        SendSolution ->
+            case model.file of
+                Just file ->
+                    ( model, sendSolution (Session.cred model.session) file model.id )
+
+                Nothing ->
+                    ( model, Cmd.none )
+
+        SendSolutionResponse (Ok _) ->
+            ( { model | modalMessage = ModalMessage <| Just "Решение отправлено" }, Cmd.none )
+
+        SendSolutionResponse (Err err) ->
+            ( { model | modalMessage = ModalMessage <| Just err.message }, Cmd.none )
+
         CloseModal ->
-            ( { model | errorMessage = Nothing }, Cmd.none )
+            ( { model | modalMessage = ModalMessage Nothing }, Cmd.none )
 
 
 
@@ -236,12 +256,24 @@ subscriptions model =
 
 
 
--- HTTP
+--HTTP
 
 
-getTask : Uuid -> Maybe Cred -> Cmd Msg
-getTask id cred =
+getTask : Maybe Cred -> Uuid -> Cmd Msg
+getTask cred id =
     Api.get (Endpoint.getTask id) cred GotTask taskDecoder
+
+
+sendSolution : Maybe Cred -> File -> Uuid -> Cmd Msg
+sendSolution cred file id =
+    let
+        body =
+            Http.multipartBody <|
+                [ Http.filePart "solution" file
+                , Http.stringPart "id" <| Uuid.toString id
+                ]
+    in
+    Api.postExpectEmpty Endpoint.taskSolution cred body SendSolutionResponse
 
 
 

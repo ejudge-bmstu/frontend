@@ -12,8 +12,8 @@ import Html exposing (Attribute)
 import Html.Attributes as Attr
 import Url exposing (Url)
 import Url.Builder as Builder
-import Url.Parser as Parser exposing ((</>), (<?>), Parser, int, oneOf, s, string, top)
-import Url.Parser.Query as Query exposing (int, string)
+import Url.Parser as Parser exposing ((</>), (<?>), Parser, oneOf, s, string, top)
+import Url.Parser.Query as Query exposing (string)
 import Uuid exposing (Uuid)
 
 
@@ -28,20 +28,14 @@ type Route
     | Logout
     | Register
     | RegisterConfirm (Maybe String)
-    | Category
+    | TaskList
     | Task Uuid
     | AddTask
-    | TaskSolution Uuid
     | UserResults
 
 
-quuid : String -> Query.Parser (Maybe Uuid)
-quuid name =
-    Query.map (Uuid.fromString << Maybe.withDefault "") (string name)
-
-
-uuuid : Parser.Parser (Maybe Uuid -> a) a
-uuuid =
+uuid : Parser.Parser (Maybe Uuid -> a) a
+uuid =
     Parser.map Uuid.fromString Parser.string
 
 
@@ -60,14 +54,6 @@ parser =
 
                 Nothing ->
                     NotFound
-
-        mkTaskSolutionRoute x =
-            case x of
-                Just y ->
-                    TaskSolution y
-
-                Nothing ->
-                    NotFound
     in
     oneOf
         [ Parser.map Root top
@@ -76,10 +62,9 @@ parser =
         , Parser.map Logout (s "logout")
         , Parser.map Register (s "register")
         , Parser.map RegisterConfirm (s "register" </> s "confirm" <?> string "token")
-        , Parser.map Category (s "tasks")
+        , Parser.map TaskList (s "task" </> s "list")
         , Parser.map AddTask (s "task" </> s "add")
-        , Parser.map mkTaskSolutionRoute (s "task" </> s "solution" <?> quuid "id")
-        , Parser.map mkTaskRoute (s "task" </> uuuid)
+        , Parser.map mkTaskRoute (s "task" </> uuid)
         , Parser.map UserResults (s "user" </> s "results")
         ]
 
@@ -128,17 +113,14 @@ routeToString page =
         RegisterConfirm _ ->
             Builder.relative [ "register", "confirm" ] []
 
-        Category ->
-            Builder.relative [ "tasks" ] []
+        TaskList ->
+            Builder.relative [ "task", "list" ] []
 
         Task id ->
             Builder.relative [ "task", Uuid.toString id ] []
 
         AddTask ->
             Builder.relative [ "task", "add" ] []
-
-        TaskSolution x ->
-            Builder.relative [ "task", "solution", Uuid.toString x ] []
 
         UserResults ->
             Builder.relative [ "user", "results" ] []
