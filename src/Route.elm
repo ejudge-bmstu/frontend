@@ -1,5 +1,6 @@
 module Route exposing
     ( Route(..)
+    , catMaybes
     , fromUrl
     , href
     , replaceUrl
