@@ -29,7 +29,6 @@ type Page
     | Category
     | Task
     | AddTask
-    | TaskSolution
     | UserResults
 
 

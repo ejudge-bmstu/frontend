@@ -18,7 +18,6 @@ import Page.NotFound as NotFound
 import Page.Register as Register
 import Page.RegisterConfirm as RegisterConfirm
 import Page.Root as Root
-import Page.SendSolution as SendSolution
 import Page.Task as Task
 import Page.TaskResults as TaskResults
 import Route exposing (Route)
@@ -44,7 +43,6 @@ type Page
     | Category Category.Model
     | Task Task.Model
     | AddTask AddTask.Model
-    | SendSolution SendSolution.Model
     | TaskResults TaskResults.Model
 
 
@@ -123,9 +121,6 @@ view model =
         AddTask task ->
             viewPage Page.AddTask AddTaskMsg (AddTask.view task) True
 
-        SendSolution task ->
-            viewPage Page.TaskSolution SendSolutionMsg (SendSolution.view task) True
-
         TaskResults task ->
             viewPage Page.UserResults TaskResultsMsg (TaskResults.view task) True
 
@@ -148,7 +143,6 @@ type Msg
     | DropdownMsg Dropdown.State
     | TaskMsg Task.Msg
     | AddTaskMsg AddTask.Msg
-    | SendSolutionMsg SendSolution.Msg
     | TaskResultsMsg TaskResults.Msg
 
 
@@ -181,9 +175,6 @@ toSession model =
 
         AddTask task ->
             AddTask.toSession task
-
-        SendSolution sendSolution ->
-            SendSolution.toSession sendSolution
 
         TaskResults results ->
             TaskResults.toSession results
@@ -226,16 +217,12 @@ changeRouteTo maybeRoute model =
                 |> updateWith model Category CategoryMsg
 
         Just (Route.Task id) ->
-            Task.init id session
+            Task.init session id
                 |> updateWith model Task TaskMsg
 
         Just Route.AddTask ->
             AddTask.init session
                 |> updateWith model AddTask AddTaskMsg
-
-        Just (Route.TaskSolution id) ->
-            SendSolution.init session id
-                |> updateWith model SendSolution SendSolutionMsg
 
         Just Route.UserResults ->
             TaskResults.init session
@@ -293,10 +280,6 @@ update msg model =
         ( AddTaskMsg subMsg, AddTask task ) ->
             AddTask.update subMsg task
                 |> updateWith model AddTask AddTaskMsg
-
-        ( SendSolutionMsg subMsg, SendSolution task ) ->
-            SendSolution.update subMsg task
-                |> updateWith model SendSolution SendSolutionMsg
 
         ( TaskResultsMsg subMsg, TaskResults task ) ->
             TaskResults.update subMsg task
@@ -356,9 +339,6 @@ subscriptions model =
 
                 AddTask task ->
                     Sub.map AddTaskMsg (AddTask.subscriptions task)
-
-                SendSolution task ->
-                    Sub.map SendSolutionMsg (SendSolution.subscriptions task)
 
                 TaskResults results ->
                     Sub.map TaskResultsMsg (TaskResults.subscriptions results)

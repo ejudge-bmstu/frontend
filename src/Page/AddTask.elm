@@ -25,6 +25,7 @@ import Bootstrap.Text as Text
 import Bootstrap.Utilities.Size as Size
 import Bootstrap.Utilities.Spacing as Spacing
 import Cred exposing (Cred)
+import Data.ReportAccess exposing (..)
 import File exposing (File)
 import File.Select as File
 import Html exposing (..)
@@ -78,48 +79,10 @@ type alias ValidTask =
     }
 
 
-type ReportAccess
-    = FullAccess
-    | NoAccess
-
-
 type alias ExampleTest =
     { input : String
     , output : String
     }
-
-
-reportAccessToString : ReportAccess -> String
-reportAccessToString ra =
-    case ra of
-        FullAccess ->
-            "full_access"
-
-        NoAccess ->
-            "no_access"
-
-
-reportAccessPrettyPrint : ReportAccess -> String
-reportAccessPrettyPrint ra =
-    case ra of
-        FullAccess ->
-            "Полный доступ"
-
-        NoAccess ->
-            "Ограниченный доступ"
-
-
-reportAccessFromString : String -> Maybe ReportAccess
-reportAccessFromString ra =
-    case ra of
-        "full_access" ->
-            Just FullAccess
-
-        "no_access" ->
-            Just NoAccess
-
-        _ ->
-            Nothing
 
 
 type alias Category =

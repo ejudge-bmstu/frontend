@@ -21,6 +21,7 @@ import Bootstrap.Utilities.Flex as Flex
 import Bootstrap.Utilities.Size as Size
 import Bootstrap.Utilities.Spacing as Spacing
 import Cred exposing (Cred)
+import Data.Category exposing (..)
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
@@ -54,14 +55,6 @@ type alias Model =
 init : Session -> ( Model, Cmd Msg )
 init session =
     let
-        -- subpageInit =
-        --     Maybe.map (Tasks.init session page) categoryId
-        -- ( subpage, subCmd ) =
-        --     case subpageInit of
-        --         Just ( subpage_, subCmd_ ) ->
-        --             ( Just (Tasks subpage_), subCmd_ )
-        --         Nothing ->
-        --             ( Nothing, Cmd.none )
         model =
             { session = session
             , categories = []
@@ -326,21 +319,6 @@ update msg model =
 subscriptions : Model -> Sub Msg
 subscriptions model =
     Session.changes GotSession (Session.navKey model.session)
-
-
-type alias Category =
-    { id : Uuid
-    , name : String
-    , count : Int
-    }
-
-
-categoryDecoder : Decoder Category
-categoryDecoder =
-    D.map3 Category
-        (D.field "id" Uuid.decoder)
-        (D.field "name" D.string)
-        (D.field "count" D.int)
 
 
 categoriesDecoder : Decoder (List Category)
