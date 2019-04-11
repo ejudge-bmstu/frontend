@@ -116,7 +116,13 @@ viewTask model task =
             ]
         , Grid.row []
             [ Grid.col [ Col.md12 ]
-                [ p [] [ text task.category.name ] ]
+                [ case task.category of
+                    Just category ->
+                        p [] [ text category.name ]
+
+                    Nothing ->
+                        p [] [ text "Нет" ]
+                ]
             ]
         , Grid.row []
             [ Grid.col [ Col.md12 ]

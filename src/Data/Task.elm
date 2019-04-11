@@ -17,7 +17,7 @@ import Uuid exposing (Uuid)
 type alias Task =
     { name : String
     , description : String
-    , category : Category
+    , category : Maybe Category
     , access : ReportAccess
     , limits : List Limit
     , examples : List ExampleTest
@@ -42,7 +42,7 @@ taskDecoder =
     D.map6 Task
         (D.field "name" D.string)
         (D.field "description" D.string)
-        (D.field "category" categoryDecoder)
+        (D.field "category" (D.maybe categoryDecoder))
         (D.field "access_report" (D.map (Maybe.withDefault FullAccess << reportAccessFromString) D.string))
         (D.field "limits" (D.list limitDecoder))
         (D.field "examples" (D.list exampleDecoder))
