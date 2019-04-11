@@ -162,14 +162,18 @@ view : Model -> { title : String, content : Html Msg }
 view model =
     { title = "Добавление задачи"
     , content =
-        divWithModal model.modalMessage CloseModal [ Spacing.mt3 ] <|
-            [ case model.categories of
-                [] ->
-                    div [] []
+        case model.categories of
+            [] ->
+                divWithModal
+                    (ModalMessage (Just "Добавьте хотя бы одну категорию"))
+                    CloseModal
+                    []
+                    []
 
-                _ ->
-                    viewForm model
-            ]
+            _ ->
+                divWithModal model.modalMessage CloseModal [ Spacing.mt3 ] <|
+                    [ viewForm model
+                    ]
     }
 
 
