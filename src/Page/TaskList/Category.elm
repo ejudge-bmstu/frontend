@@ -129,6 +129,10 @@ categoryHeader model =
 
 categoryTextHeader : Model -> Html Msg
 categoryTextHeader model =
+    let
+        role =
+            Session.role model.session
+    in
     Grid.row []
         ([ Grid.col [ Col.md9 ]
             [ h4
@@ -139,13 +143,13 @@ categoryTextHeader model =
                 [ text <| Maybe.withDefault "Без категории" model.name ]
             ]
          ]
-            ++ (case model.id of
-                    Just _ ->
+            ++ (case ( model.id, Role.hasAdminAccess role ) of
+                    ( Just _, True ) ->
                         [ Grid.col [ Col.md3 ]
                             [ Button.button [ Button.onClick EditCategory ] [ text "Редактировать" ] ]
                         ]
 
-                    Nothing ->
+                    ( _, _ ) ->
                         []
                )
         )
