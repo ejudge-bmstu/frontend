@@ -291,8 +291,8 @@ viewForm model =
                 ++ examplesView
                 ++ [ Form.row
                         []
-                        [ Form.col [ Col.offsetSm2, Col.sm2 ] [ text "Ограничение по времени" ]
-                        , Form.col [ Col.sm2 ] [ text "Ограничение по памяти" ]
+                        [ Form.col [ Col.offsetSm2, Col.sm2 ] [ text "Ограничение по времени (c)" ]
+                        , Form.col [ Col.sm2 ] [ text "Ограничение по памяти (мб)" ]
                         ]
                    , Form.row []
                         [ Form.colLabel [ Col.sm2 ] [ text "Python" ]

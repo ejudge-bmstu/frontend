@@ -142,8 +142,8 @@ viewTask model task =
                 [ Table.simpleTable
                     ( Table.simpleThead
                         [ Table.th [] [ text "" ]
-                        , Table.th [] [ text "Ограничение по времени" ]
-                        , Table.th [] [ text "Ограничение по памяти" ]
+                        , Table.th [] [ text "Ограничение по времени (с)" ]
+                        , Table.th [] [ text "Ограничение по памяти (мб)" ]
                         ]
                     , Table.tbody [] <|
                         List.map
