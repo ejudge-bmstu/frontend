@@ -273,6 +273,13 @@ viewForm model =
                             [ value <| reportAccessToString NoAccess ]
                             [ text <| reportAccessPrettyPrint NoAccess ]
                         ]
+                    , Form.help []
+                        [ text <|
+                            "При полном доступе пользователь увидит отчет о проблемах, "
+                                ++ "возникших на этапе проверки.\n"
+                                ++ "При ограниченном пользователь увидит только "
+                                ++ "число пройденных задач."
+                        ]
                     ]
                 ]
             , Form.row []
@@ -334,10 +341,17 @@ viewForm model =
                         ]
                    , Form.row []
                         [ Form.colLabel [ Col.sm2 ] [ text "Тесты" ]
-                        , Form.col [ Col.sm2 ]
+                        , Form.col [ Col.sm4 ]
                             [ Button.button
                                 [ Button.primary, Button.onClick TestsEntered ]
                                 [ text buttonFiles ]
+                            , Form.help []
+                                [ text <|
+                                    "Архив должен быть валидным. Валидным считается "
+                                        ++ "архив, в котором содержится N папок, в "
+                                        ++ "каждой из которых два файла: in.txt и "
+                                        ++ "out.txt. Названия папок произвольные."
+                                ]
                             ]
                         ]
                    , Form.row [ Row.rightSm ]
