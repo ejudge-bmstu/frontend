@@ -121,7 +121,7 @@ viewTask model task =
                         p [] [ text category.name ]
 
                     Nothing ->
-                        p [] [ text "Нет" ]
+                        p [] [ text "Нет категории" ]
                 ]
             ]
         , Grid.row []
