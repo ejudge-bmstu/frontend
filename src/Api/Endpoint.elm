@@ -12,8 +12,8 @@ module Api.Endpoint exposing
     , register
     , registerComplete
     , request
-    , taskSolution
     , taskResults
+    , taskSolution
     )
 
 import Http
