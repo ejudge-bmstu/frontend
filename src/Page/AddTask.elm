@@ -166,7 +166,7 @@ view model =
             [] ->
                 divWithModal
                     (ModalMessage (Just "Добавьте хотя бы одну категорию"))
-                    CloseModal
+                    CloseModalRedirect
                     []
                     []
 
@@ -412,6 +412,7 @@ type Msg
     | SendTask
     | SendTaskResponse (Api.Response ())
     | CloseModal
+    | CloseModalRedirect
     | EnterInput Int String
     | EnterOutput Int String
     | DeleteExample Int
@@ -525,6 +526,9 @@ update msg model =
 
         CloseModal ->
             ( { model | modalMessage = ModalMessage Nothing }, Cmd.none )
+
+        CloseModalRedirect ->
+            ( { model | modalMessage = ModalMessage Nothing }, Route.replaceUrl (Session.navKey model.session) Route.TaskList )
 
         EnterInput ix inp ->
             let
