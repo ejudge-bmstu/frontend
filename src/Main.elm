@@ -19,6 +19,7 @@ import Page.RegisterConfirm as RegisterConfirm
 import Page.Root as Root
 import Page.Task as Task
 import Page.TaskList as TaskList
+import Page.TaskResults as TaskResults
 import Page.UserResults as UserResults
 import Route exposing (Route)
 import Session exposing (Session(..))
@@ -44,6 +45,7 @@ type Page
     | Task Task.Model
     | AddTask AddTask.Model
     | UserResults UserResults.Model
+    | TaskResults TaskResults.Model
 
 
 
@@ -124,6 +126,9 @@ view model =
         UserResults task ->
             viewPage Page.UserResults UserResultsMsg (UserResults.view task) True
 
+        TaskResults task ->
+            viewPage Page.TaskResults TaskResultsMsg (TaskResults.view task) True
+
 
 
 -- UPDATE
@@ -142,6 +147,7 @@ type Msg
     | NavbarMsg Navbar.State
     | DropdownMsg Dropdown.State
     | TaskMsg Task.Msg
+    | TaskResultsMsg TaskResults.Msg
     | AddTaskMsg AddTask.Msg
     | UserResultsMsg UserResults.Msg
 
@@ -178,6 +184,9 @@ toSession model =
 
         UserResults results ->
             UserResults.toSession results
+
+        TaskResults results ->
+            TaskResults.toSession results
 
 
 changeRouteTo : Maybe Route -> Model -> ( Model, Cmd Msg )
@@ -227,6 +236,10 @@ changeRouteTo maybeRoute model =
         Just Route.UserResults ->
             UserResults.init session
                 |> updateWith model UserResults UserResultsMsg
+
+        Just (Route.TaskResults id) ->
+            TaskResults.init id session
+                |> updateWith model TaskResults TaskResultsMsg
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -285,6 +298,10 @@ update msg model =
             UserResults.update subMsg task
                 |> updateWith model UserResults UserResultsMsg
 
+        ( TaskResultsMsg subMsg, TaskResults task ) ->
+            TaskResults.update subMsg task
+                |> updateWith model TaskResults TaskResultsMsg
+
         ( NavbarMsg state, _ ) ->
             ( { model | navbar = state }, Cmd.none )
 
@@ -342,6 +359,9 @@ subscriptions model =
 
                 UserResults results ->
                     Sub.map UserResultsMsg (UserResults.subscriptions results)
+
+                TaskResults results ->
+                    Sub.map TaskResultsMsg (TaskResults.subscriptions results)
     in
     Sub.batch
         [ Dropdown.subscriptions model.userDropdown DropdownMsg

@@ -91,6 +91,28 @@ view model =
     }
 
 
+viewTaskName : Model -> Task -> List (Grid.Column Msg)
+viewTaskName model task =
+    let
+        role =
+            Session.role model.session
+    in
+    case Role.hasAdminAccess role of
+        False ->
+            [ Grid.col [ Col.md12 ]
+                [ h2 [] [ text task.name ] ]
+            ]
+
+        True ->
+            [ Grid.col [ Col.md10 ]
+                [ h2 [] [ text task.name ] ]
+            , Grid.col [ Col.md2 ]
+                [ a [ class "float-right", Route.href <| Route.TaskResults model.id ]
+                    [ text "Результаты" ]
+                ]
+            ]
+
+
 viewTask : Model -> Task -> Html Msg
 viewTask model task =
     let
@@ -106,10 +128,7 @@ viewTask model task =
             Session.role model.session
     in
     Grid.container [ class "content", Spacing.p3 ]
-        [ Grid.row []
-            [ Grid.col [ Col.md12 ]
-                [ h2 [] [ text task.name ] ]
-            ]
+        [ Grid.row [] <| viewTaskName model task
         , Grid.row []
             [ Grid.col [ Col.md12 ]
                 [ p [] [ text task.description ] ]

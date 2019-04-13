@@ -30,6 +30,7 @@ type Page
     | Task
     | AddTask
     | UserResults
+    | TaskResults
 
 
 type alias Settings msg =

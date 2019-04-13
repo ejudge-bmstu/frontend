@@ -33,6 +33,7 @@ type Route
     | Task Uuid
     | AddTask
     | UserResults
+    | TaskResults Uuid
 
 
 uuid : Parser.Parser (Maybe Uuid -> a) a
@@ -55,6 +56,14 @@ parser =
 
                 Nothing ->
                     NotFound
+
+        mkTaskResultRoute x =
+            case x of
+                Just y ->
+                    TaskResults y
+
+                Nothing ->
+                    NotFound
     in
     oneOf
         [ Parser.map Root top
@@ -66,6 +75,7 @@ parser =
         , Parser.map RegisterConfirm (s "register" </> s "confirm" <?> string "token")
         , Parser.map TaskList (s "task" </> s "list")
         , Parser.map AddTask (s "task" </> s "add")
+        , Parser.map mkTaskResultRoute (s "task" </> uuid </> s "results")
         , Parser.map mkTaskRoute (s "task" </> uuid)
         , Parser.map UserResults (s "user" </> s "results")
         ]
@@ -122,6 +132,9 @@ routeToString page =
 
                 Task id ->
                     [ "task", Uuid.toString id ]
+
+                TaskResults id ->
+                    [ "task", Uuid.toString id, "results" ]
 
                 AddTask ->
                     [ "task", "add" ]
