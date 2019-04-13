@@ -162,14 +162,18 @@ view : Model -> { title : String, content : Html Msg }
 view model =
     { title = "Добавление задачи"
     , content =
-        divWithModal model.modalMessage CloseModal [ Spacing.mt3 ] <|
-            [ case model.categories of
-                [] ->
-                    div [] []
+        case model.categories of
+            [] ->
+                divWithModal
+                    (ModalMessage (Just "Добавьте хотя бы одну категорию"))
+                    CloseModalRedirect
+                    []
+                    []
 
-                _ ->
-                    viewForm model
-            ]
+            _ ->
+                divWithModal model.modalMessage CloseModal [ Spacing.mt3 ] <|
+                    [ viewForm model
+                    ]
     }
 
 
@@ -422,6 +426,7 @@ type Msg
     | SendTask
     | SendTaskResponse (Api.Response ())
     | CloseModal
+    | CloseModalRedirect
     | EnterInput Int String
     | EnterOutput Int String
     | DeleteExample Int
@@ -535,6 +540,9 @@ update msg model =
 
         CloseModal ->
             ( { model | modalMessage = ModalMessage Nothing }, Cmd.none )
+
+        CloseModalRedirect ->
+            ( { model | modalMessage = ModalMessage Nothing }, Route.replaceUrl (Session.navKey model.session) Route.TaskList )
 
         EnterInput ix inp ->
             let
