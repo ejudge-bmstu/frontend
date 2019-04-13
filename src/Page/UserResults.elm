@@ -1,4 +1,4 @@
-module Page.TaskResults exposing
+module Page.UserResults exposing
     ( Model
     , Msg(..)
     , init
@@ -70,8 +70,8 @@ limitDecoder =
         (D.field "time" D.int)
 
 
-init : Uuid -> Session -> ( Model, Cmd Msg )
-init id session =
+init : Session -> ( Model, Cmd Msg )
+init session =
     let
         model =
             { session = session
@@ -90,7 +90,7 @@ init id session =
     if Role.hasUserAccess role then
         ( model
         , Cmd.batch
-            [ taskResults (Session.cred session) id
+            [ getResults (Session.cred session)
             , Task.perform AdjustTimeZone Time.here
             ]
         )
@@ -127,8 +127,7 @@ viewResults model tasksResults =
                     { options = [ Table.striped, Table.hover ]
                     , thead =
                         Table.simpleThead
-                            [ Table.th [] [ text "Пользователь" ]
-                            , Table.th [] [ text "Задача" ]
+                            [ Table.th [] [ text "Задача" ]
                             , Table.th [] [ text "Пройдено" ]
                             , Table.th [] [ text "Результат" ]
                             , Table.th [] [ text "Сообщение" ]
@@ -156,8 +155,7 @@ taskView model ix task =
                     []
     in
     Table.tr []
-        [ Table.td [] [ text task.userName ]
-        , Table.td [] [ a [ Route.href <| Route.Task task.taskId ] [ text task.taskName ] ]
+        [ Table.td [] [ a [ Route.href <| Route.Task task.taskId ] [ text task.taskName ] ]
         , Table.td [] [ text <| mkResult task.passed task.total ]
         , Table.td [] [ text task.result ]
         , Table.td [] [ text <| Maybe.withDefault "не доступно" task.message ]
@@ -237,9 +235,9 @@ subscriptions model =
 -- HTTP
 
 
-taskResults : Maybe Cred -> Uuid -> Cmd Msg
-taskResults cred id =
-    Api.get (Endpoint.taskResults id) cred GotTasksResults tasksResultsDecoder
+getResults : Maybe Cred -> Cmd Msg
+getResults cred =
+    Api.get Endpoint.getResults cred GotTasksResults tasksResultsDecoder
 
 
 

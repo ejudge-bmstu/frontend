@@ -33,6 +33,7 @@ type Route
     | Task Uuid
     | AddTask
     | UserResults
+    | TaskResults Uuid
 
 
 uuid : Parser.Parser (Maybe Uuid -> a) a
@@ -55,9 +56,18 @@ parser =
 
                 Nothing ->
                     NotFound
+
+        mkTaskResultRoute x =
+            case x of
+                Just y ->
+                    TaskResults y
+
+                Nothing ->
+                    NotFound
     in
     oneOf
         [ Parser.map Root top
+        , Parser.map Root (s "home")
         , Parser.map NotFound (s "404")
         , Parser.map Login (s "login")
         , Parser.map Logout (s "logout")
@@ -65,6 +75,7 @@ parser =
         , Parser.map RegisterConfirm (s "register" </> s "confirm" <?> string "token")
         , Parser.map TaskList (s "task" </> s "list")
         , Parser.map AddTask (s "task" </> s "add")
+        , Parser.map mkTaskResultRoute (s "task" </> uuid </> s "results")
         , Parser.map mkTaskRoute (s "task" </> uuid)
         , Parser.map UserResults (s "user" </> s "results")
         ]
@@ -95,36 +106,43 @@ fromUrl url =
 
 routeToString : Route -> String
 routeToString page =
-    case page of
-        Root ->
-            Builder.relative [ "/" ] []
+    let
+        pieces =
+            case page of
+                Root ->
+                    []
 
-        NotFound ->
-            Builder.relative [ "404" ] []
+                NotFound ->
+                    [ "404" ]
 
-        Login ->
-            Builder.relative [ "login" ] []
+                Login ->
+                    [ "login" ]
 
-        Logout ->
-            Builder.relative [ "logout" ] []
+                Logout ->
+                    [ "logout" ]
 
-        Register ->
-            Builder.relative [ "register" ] []
+                Register ->
+                    [ "register" ]
 
-        RegisterConfirm _ ->
-            Builder.relative [ "register", "confirm" ] []
+                RegisterConfirm _ ->
+                    [ "register", "confirm" ]
 
-        TaskList ->
-            Builder.relative [ "task", "list" ] []
+                TaskList ->
+                    [ "task", "list" ]
 
-        Task id ->
-            Builder.relative [ "task", Uuid.toString id ] []
+                Task id ->
+                    [ "task", Uuid.toString id ]
 
-        AddTask ->
-            Builder.relative [ "task", "add" ] []
+                TaskResults id ->
+                    [ "task", Uuid.toString id, "results" ]
 
-        UserResults ->
-            Builder.relative [ "user", "results" ] []
+                AddTask ->
+                    [ "task", "add" ]
+
+                UserResults ->
+                    [ "user", "results" ]
+    in
+    "/" ++ String.join "/" pieces
 
 
 catMaybes : List (Maybe a) -> List a

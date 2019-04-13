@@ -16,6 +16,7 @@ import Bootstrap.Grid as Grid
 import Bootstrap.Grid.Col as Col
 import Bootstrap.Grid.Row as Row
 import Bootstrap.Table as Table
+import Bootstrap.Utilities.Spacing as Spacing
 import Cred exposing (Cred)
 import Data.ReportAccess exposing (..)
 import Data.Task exposing (..)
@@ -77,9 +78,9 @@ init session id =
 
 view : Model -> { title : String, content : Html Msg }
 view model =
-    { title = "Добавление задачи"
+    { title = "Задача"
     , content =
-        divWithModal model.modalMessage CloseModal [] <|
+        divWithModal model.modalMessage CloseModal [ Spacing.m1 ] <|
             [ case model.task of
                 Just task ->
                     viewTask model task
@@ -88,6 +89,28 @@ view model =
                     div [] []
             ]
     }
+
+
+viewTaskName : Model -> Task -> List (Grid.Column Msg)
+viewTaskName model task =
+    let
+        role =
+            Session.role model.session
+    in
+    case Role.hasAdminAccess role of
+        False ->
+            [ Grid.col [ Col.md12 ]
+                [ h2 [] [ text task.name ] ]
+            ]
+
+        True ->
+            [ Grid.col [ Col.md10 ]
+                [ h2 [] [ text task.name ] ]
+            , Grid.col [ Col.md2 ]
+                [ a [ class "float-right", Route.href <| Route.TaskResults model.id ]
+                    [ text "Результаты" ]
+                ]
+            ]
 
 
 viewTask : Model -> Task -> Html Msg
@@ -100,12 +123,12 @@ viewTask model task =
 
                 Nothing ->
                     "Выбрать"
+
+        role =
+            Session.role model.session
     in
-    Grid.container []
-        [ Grid.row []
-            [ Grid.col [ Col.md12 ]
-                [ h2 [] [ text task.name ] ]
-            ]
+    Grid.container [ class "content", Spacing.p3 ]
+        [ Grid.row [] <| viewTaskName model task
         , Grid.row []
             [ Grid.col [ Col.md12 ]
                 [ p [] [ text task.description ] ]
@@ -118,7 +141,7 @@ viewTask model task =
             [ Grid.col [ Col.md12 ]
                 [ case task.category of
                     Just category ->
-                        p [] [ text category.name ]
+                        p [] [ text <| "Категория: " ++ category.name ]
 
                     Nothing ->
                         p [] [ text "Нет категории" ]
@@ -147,7 +170,7 @@ viewTask model task =
             [ Grid.col [ Col.md12 ]
                 [ Table.simpleTable
                     ( Table.simpleThead
-                        [ Table.th [] [ text "" ]
+                        [ Table.th [] [ text "Язык" ]
                         , Table.th [] [ text "Ограничение по времени (с)" ]
                         , Table.th [] [ text "Ограничение по памяти (мб)" ]
                         ]
@@ -171,15 +194,17 @@ viewTask model task =
                     [ Button.primary, Button.onClick SolutionEntered ]
                     [ text buttonFiles ]
                 ]
-            ]
-        , Form.row [ Row.rightSm ]
-            [ Form.col [ Col.sm2 ]
-                [ Button.button
-                    [ Button.primary
-                    , Button.attrs [ class "float-right" ]
-                    , Button.onClick SendSolution
-                    ]
-                    [ text "Отправить" ]
+            , Form.col [ Col.offsetSm6, Col.sm2 ]
+                [ if Role.hasUserAccess role then
+                    Button.button
+                        [ Button.primary
+                        , Button.attrs [ class "float-right" ]
+                        , Button.onClick SendSolution
+                        ]
+                        [ text "Отправить" ]
+
+                  else
+                    div [] []
                 ]
             ]
         ]

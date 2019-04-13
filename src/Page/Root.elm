@@ -24,7 +24,19 @@ type Msg
 
 init : Session -> ( Model, Cmd Msg )
 init session =
-    ( Model session, Cmd.none )
+    let
+        viewer =
+            Session.viewer session
+
+        navKey =
+            Session.navKey session
+    in
+    case viewer of
+        Just _ ->
+            ( Model session, Route.replaceUrl navKey Route.TaskList )
+
+        Nothing ->
+            ( Model session, Route.replaceUrl navKey Route.Login )
 
 
 view : Model -> { title : String, content : Html msg }

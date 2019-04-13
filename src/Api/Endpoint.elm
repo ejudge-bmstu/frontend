@@ -12,6 +12,7 @@ module Api.Endpoint exposing
     , register
     , registerComplete
     , request
+    , taskResults
     , taskSolution
     )
 
@@ -139,4 +140,9 @@ taskSolution =
 
 getResults : Endpoint
 getResults =
-    url [ "user", "solutions" ] []
+    url [ "user", "results" ] []
+
+
+taskResults : Uuid -> Endpoint
+taskResults id =
+    url [ "task", Uuid.toString id, "results" ] []

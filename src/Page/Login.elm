@@ -149,7 +149,7 @@ update msg model =
 
         CompletedLogin (Ok viewer) ->
             ( model
-            , Viewer.store viewer
+            , Cmd.batch [ Viewer.store viewer ]
             )
 
         CompletedLogin (Err error) ->
@@ -159,7 +159,7 @@ update msg model =
 
         GotSession session ->
             ( { model | session = session }
-            , Route.replaceUrl (Session.navKey session) Route.Root
+            , Route.replaceUrl (Session.navKey model.session) Route.TaskList
             )
 
         CloseModal ->

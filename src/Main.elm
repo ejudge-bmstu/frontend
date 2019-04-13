@@ -20,6 +20,7 @@ import Page.Root as Root
 import Page.Task as Task
 import Page.TaskList as TaskList
 import Page.TaskResults as TaskResults
+import Page.UserResults as UserResults
 import Route exposing (Route)
 import Session exposing (Session(..))
 import Url exposing (Url)
@@ -43,6 +44,7 @@ type Page
     | TaskList TaskList.Model
     | Task Task.Model
     | AddTask AddTask.Model
+    | UserResults UserResults.Model
     | TaskResults TaskResults.Model
 
 
@@ -121,8 +123,11 @@ view model =
         AddTask task ->
             viewPage Page.AddTask AddTaskMsg (AddTask.view task) True
 
+        UserResults task ->
+            viewPage Page.UserResults UserResultsMsg (UserResults.view task) True
+
         TaskResults task ->
-            viewPage Page.UserResults TaskResultsMsg (TaskResults.view task) True
+            viewPage Page.TaskResults TaskResultsMsg (TaskResults.view task) True
 
 
 
@@ -142,8 +147,9 @@ type Msg
     | NavbarMsg Navbar.State
     | DropdownMsg Dropdown.State
     | TaskMsg Task.Msg
-    | AddTaskMsg AddTask.Msg
     | TaskResultsMsg TaskResults.Msg
+    | AddTaskMsg AddTask.Msg
+    | UserResultsMsg UserResults.Msg
 
 
 toSession : Model -> Session
@@ -175,6 +181,9 @@ toSession model =
 
         AddTask task ->
             AddTask.toSession task
+
+        UserResults results ->
+            UserResults.toSession results
 
         TaskResults results ->
             TaskResults.toSession results
@@ -225,7 +234,11 @@ changeRouteTo maybeRoute model =
                 |> updateWith model AddTask AddTaskMsg
 
         Just Route.UserResults ->
-            TaskResults.init session
+            UserResults.init session
+                |> updateWith model UserResults UserResultsMsg
+
+        Just (Route.TaskResults id) ->
+            TaskResults.init id session
                 |> updateWith model TaskResults TaskResultsMsg
 
 
@@ -280,6 +293,10 @@ update msg model =
         ( AddTaskMsg subMsg, AddTask task ) ->
             AddTask.update subMsg task
                 |> updateWith model AddTask AddTaskMsg
+
+        ( UserResultsMsg subMsg, UserResults task ) ->
+            UserResults.update subMsg task
+                |> updateWith model UserResults UserResultsMsg
 
         ( TaskResultsMsg subMsg, TaskResults task ) ->
             TaskResults.update subMsg task
@@ -339,6 +356,9 @@ subscriptions model =
 
                 AddTask task ->
                     Sub.map AddTaskMsg (AddTask.subscriptions task)
+
+                UserResults results ->
+                    Sub.map UserResultsMsg (UserResults.subscriptions results)
 
                 TaskResults results ->
                     Sub.map TaskResultsMsg (TaskResults.subscriptions results)
