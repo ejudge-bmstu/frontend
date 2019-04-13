@@ -537,7 +537,7 @@ update msg model =
                     ( { model | modalMessage = ModalMessage <| Just "Не все данные введены" }, Cmd.none )
 
         SendTaskResponse (Ok _) ->
-            ( model, Cmd.none )
+            ( { model | modalMessage = ModalMessage <| Just "Задача добавлена!" }, Cmd.none )
 
         SendTaskResponse (Err err) ->
             ( { model | modalMessage = ModalMessage <| Just err.message }, Cmd.none )

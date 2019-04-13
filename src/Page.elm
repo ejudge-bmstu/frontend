@@ -119,9 +119,7 @@ mkViewerMenu viewer ps =
                     , toggleButton =
                         Dropdown.toggle [ Button.dark ] [ text usernameStr ]
                     , items =
-                        [ Dropdown.anchorItem [ Route.href Route.Root ] [ text "Профиль" ]
-                        , Dropdown.divider
-                        , Dropdown.anchorItem [ Route.href Route.Logout ] [ text "Выход" ]
+                        [ Dropdown.anchorItem [ Route.href Route.Logout ] [ text "Выход" ]
                         ]
                     }
             ]

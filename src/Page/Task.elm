@@ -135,7 +135,7 @@ viewTask model task =
             ]
         , Grid.row []
             [ Grid.col [ Col.md12 ]
-                [ p [] [ text <| reportAccessPrettyPrint task.access ] ]
+                [ p [] [ text <| "Доступ к отчету: " ++ reportAccessPrettyPrint task.access ] ]
             ]
         , Grid.row []
             [ Grid.col [ Col.md12 ]
