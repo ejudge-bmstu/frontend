@@ -58,6 +58,7 @@ parser =
     in
     oneOf
         [ Parser.map Root top
+        , Parser.map Root (s "home")
         , Parser.map NotFound (s "404")
         , Parser.map Login (s "login")
         , Parser.map Logout (s "logout")
@@ -95,36 +96,40 @@ fromUrl url =
 
 routeToString : Route -> String
 routeToString page =
-    case page of
-        Root ->
-            Builder.relative [ "/" ] []
+    let
+        pieces =
+            case page of
+                Root ->
+                    []
 
-        NotFound ->
-            Builder.relative [ "404" ] []
+                NotFound ->
+                    [ "404" ]
 
-        Login ->
-            Builder.relative [ "login" ] []
+                Login ->
+                    [ "login" ]
 
-        Logout ->
-            Builder.relative [ "logout" ] []
+                Logout ->
+                    [ "logout" ]
 
-        Register ->
-            Builder.relative [ "register" ] []
+                Register ->
+                    [ "register" ]
 
-        RegisterConfirm _ ->
-            Builder.relative [ "register", "confirm" ] []
+                RegisterConfirm _ ->
+                    [ "register", "confirm" ]
 
-        TaskList ->
-            Builder.relative [ "task", "list" ] []
+                TaskList ->
+                    [ "task", "list" ]
 
-        Task id ->
-            Builder.relative [ "task", Uuid.toString id ] []
+                Task id ->
+                    [ "task", Uuid.toString id ]
 
-        AddTask ->
-            Builder.relative [ "task", "add" ] []
+                AddTask ->
+                    [ "task", "add" ]
 
-        UserResults ->
-            Builder.relative [ "user", "results" ] []
+                UserResults ->
+                    [ "user", "results" ]
+    in
+    "/" ++ String.join "/" pieces
 
 
 catMaybes : List (Maybe a) -> List a

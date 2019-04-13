@@ -1,4 +1,4 @@
-module Page.TaskResults exposing
+module Page.UserResults exposing
     ( Model
     , Msg(..)
     , init
@@ -14,13 +14,17 @@ import Bootstrap.Accordion as Accordion
 import Bootstrap.Card.Block as Block
 import Bootstrap.Grid as Grid
 import Bootstrap.Grid.Col as Col
+import Bootstrap.Table as Table
+import Bootstrap.Utilities.Spacing as Spacing
 import Cred exposing (Cred)
 import Data.Date exposing (..)
+import Data.TaskResult exposing (..)
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
 import Json.Decode as D exposing (Decoder)
 import Page.Utils exposing (..)
+import Role
 import Route
 import Session exposing (Session)
 import Task
@@ -40,38 +44,6 @@ type alias Model =
     , accordionState : Accordion.State
     , modalMessage : ModalMessage
     }
-
-
-decodeTime : D.Decoder Time.Posix
-decodeTime =
-    D.int
-        |> D.andThen
-            (\ms ->
-                D.succeed <| Time.millisToPosix ms
-            )
-
-
-type alias TaskResult =
-    { name : String
-    , id : Uuid
-    , passed : Maybe Int
-    , total : Int
-    , message : Maybe String
-    , result : String
-    , date : Time.Posix
-    }
-
-
-taskResultDecoder : Decoder TaskResult
-taskResultDecoder =
-    D.map7 TaskResult
-        (D.field "name" D.string)
-        (D.field "id" Uuid.decoder)
-        (D.field "passed" (D.maybe D.int))
-        (D.field "total" D.int)
-        (D.field "message" (D.maybe D.string))
-        (D.field "result" D.string)
-        (D.field "date" decodeTime)
 
 
 type alias TasksResults =
@@ -100,17 +72,31 @@ limitDecoder =
 
 init : Session -> ( Model, Cmd Msg )
 init session =
-    ( { session = session
-      , tasksResults = Nothing
-      , accordionState = Accordion.initialState
-      , zone = Time.utc
-      , modalMessage = ModalMessage Nothing
-      }
-    , Cmd.batch
-        [ getResults (Session.cred session)
-        , Task.perform AdjustTimeZone Time.here
-        ]
-    )
+    let
+        model =
+            { session = session
+            , tasksResults = Nothing
+            , accordionState = Accordion.initialState
+            , zone = Time.utc
+            , modalMessage = ModalMessage Nothing
+            }
+
+        role =
+            Session.role session
+
+        navKey =
+            Session.navKey session
+    in
+    if Role.hasUserAccess role then
+        ( model
+        , Cmd.batch
+            [ getResults (Session.cred session)
+            , Task.perform AdjustTimeZone Time.here
+            ]
+        )
+
+    else
+        ( model, Route.replaceUrl navKey Route.NotFound )
 
 
 
@@ -119,12 +105,12 @@ init session =
 
 view : Model -> { title : String, content : Html Msg }
 view model =
-    { title = "Задача"
+    { title = "Результаты"
     , content =
-        divWithModal model.modalMessage CloseModal [] <|
+        divWithModal model.modalMessage CloseModal [ Spacing.m1 ] <|
             [ case model.tasksResults of
                 Just task ->
-                    viewTask model task
+                    viewResults model task
 
                 Nothing ->
                     div [] []
@@ -132,21 +118,30 @@ view model =
     }
 
 
-viewTask : Model -> TasksResults -> Html Msg
-viewTask model tasksResults =
-    Grid.container []
+viewResults : Model -> TasksResults -> Html Msg
+viewResults model tasksResults =
+    Grid.container [ class "content", Spacing.p3 ]
         [ Grid.row []
             [ Grid.col [ Col.md12 ]
-                [ Accordion.config AccordionMsg
-                    |> Accordion.withAnimation
-                    |> (Accordion.cards <| List.indexedMap (taskView model) tasksResults)
-                    |> Accordion.view model.accordionState
+                [ Table.table
+                    { options = [ Table.striped, Table.hover ]
+                    , thead =
+                        Table.simpleThead
+                            [ Table.th [] [ text "Задача" ]
+                            , Table.th [] [ text "Пройдено" ]
+                            , Table.th [] [ text "Результат" ]
+                            , Table.th [] [ text "Сообщение" ]
+                            , Table.th [] [ text "Дата" ]
+                            ]
+                    , tbody =
+                        Table.tbody [] <| List.indexedMap (taskView model) tasksResults
+                    }
                 ]
             ]
         ]
 
 
-taskView : Model -> Int -> TaskResult -> Accordion.Card Msg
+taskView : Model -> Int -> TaskResult -> Table.Row Msg
 taskView model ix task =
     let
         messageBlock =
@@ -159,25 +154,13 @@ taskView model ix task =
                 Nothing ->
                     []
     in
-    Accordion.card
-        { id = String.fromInt ix
-        , options = []
-        , header =
-            Accordion.header []
-                (Accordion.toggle [] [ text task.name ])
-        , blocks =
-            [ Accordion.block []
-                [ Block.text [] [ text <| "Дата прохождения: " ++ mkDate model.zone task.date ] ]
-            , Accordion.block []
-                [ Block.text [] [ text <| "Статус: " ++ task.result ] ]
-            , Accordion.block []
-                [ Block.text [] [ text <| "Число пройденных тестов: " ++ mkResult task.passed task.total ] ]
-            ]
-                ++ messageBlock
-                ++ [ Accordion.block []
-                        [ Block.link [ Route.href <| Route.Task task.id ] [ text "Перейти к задаче" ] ]
-                   ]
-        }
+    Table.tr []
+        [ Table.td [] [ a [ Route.href <| Route.Task task.taskId ] [ text task.taskName ] ]
+        , Table.td [] [ text <| mkResult task.passed task.total ]
+        , Table.td [] [ text task.result ]
+        , Table.td [] [ text <| Maybe.withDefault "не доступно" task.message ]
+        , Table.td [] [ text <| mkDate model.zone task.date ]
+        ]
 
 
 mkResult : Maybe Int -> Int -> String

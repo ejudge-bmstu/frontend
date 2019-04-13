@@ -91,7 +91,8 @@ view model =
                     []
                     [ Grid.col
                         [ Col.lg4 ]
-                        [ viewAddCategory model
+                        [ viewAddTask model
+                        , viewAddCategory model
                         , viewNonCategory model
                         , viewCategoryList model
                         ]
@@ -124,6 +125,21 @@ viewAddCategory model =
         Button.button
             [ Button.primary, Button.attrs [ Spacing.mb3, Size.w100 ], Button.onClick ShowAddTask ]
             [ text "Добавить категорию" ]
+
+    else
+        div [] []
+
+
+viewAddTask : Model -> Html Msg
+viewAddTask model =
+    let
+        role =
+            Session.role model.session
+    in
+    if Role.hasAdminAccess role then
+        Button.linkButton
+            [ Button.primary, Button.attrs [ Spacing.mb3, Size.w100, Route.href Route.AddTask ] ]
+            [ text "Добавить задачу" ]
 
     else
         div [] []

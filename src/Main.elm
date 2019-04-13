@@ -19,7 +19,7 @@ import Page.RegisterConfirm as RegisterConfirm
 import Page.Root as Root
 import Page.Task as Task
 import Page.TaskList as TaskList
-import Page.TaskResults as TaskResults
+import Page.UserResults as UserResults
 import Route exposing (Route)
 import Session exposing (Session(..))
 import Url exposing (Url)
@@ -43,7 +43,7 @@ type Page
     | TaskList TaskList.Model
     | Task Task.Model
     | AddTask AddTask.Model
-    | TaskResults TaskResults.Model
+    | UserResults UserResults.Model
 
 
 
@@ -121,8 +121,8 @@ view model =
         AddTask task ->
             viewPage Page.AddTask AddTaskMsg (AddTask.view task) True
 
-        TaskResults task ->
-            viewPage Page.UserResults TaskResultsMsg (TaskResults.view task) True
+        UserResults task ->
+            viewPage Page.UserResults UserResultsMsg (UserResults.view task) True
 
 
 
@@ -143,7 +143,7 @@ type Msg
     | DropdownMsg Dropdown.State
     | TaskMsg Task.Msg
     | AddTaskMsg AddTask.Msg
-    | TaskResultsMsg TaskResults.Msg
+    | UserResultsMsg UserResults.Msg
 
 
 toSession : Model -> Session
@@ -176,8 +176,8 @@ toSession model =
         AddTask task ->
             AddTask.toSession task
 
-        TaskResults results ->
-            TaskResults.toSession results
+        UserResults results ->
+            UserResults.toSession results
 
 
 changeRouteTo : Maybe Route -> Model -> ( Model, Cmd Msg )
@@ -225,8 +225,8 @@ changeRouteTo maybeRoute model =
                 |> updateWith model AddTask AddTaskMsg
 
         Just Route.UserResults ->
-            TaskResults.init session
-                |> updateWith model TaskResults TaskResultsMsg
+            UserResults.init session
+                |> updateWith model UserResults UserResultsMsg
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -281,9 +281,9 @@ update msg model =
             AddTask.update subMsg task
                 |> updateWith model AddTask AddTaskMsg
 
-        ( TaskResultsMsg subMsg, TaskResults task ) ->
-            TaskResults.update subMsg task
-                |> updateWith model TaskResults TaskResultsMsg
+        ( UserResultsMsg subMsg, UserResults task ) ->
+            UserResults.update subMsg task
+                |> updateWith model UserResults UserResultsMsg
 
         ( NavbarMsg state, _ ) ->
             ( { model | navbar = state }, Cmd.none )
@@ -340,8 +340,8 @@ subscriptions model =
                 AddTask task ->
                     Sub.map AddTaskMsg (AddTask.subscriptions task)
 
-                TaskResults results ->
-                    Sub.map TaskResultsMsg (TaskResults.subscriptions results)
+                UserResults results ->
+                    Sub.map UserResultsMsg (UserResults.subscriptions results)
     in
     Sub.batch
         [ Dropdown.subscriptions model.userDropdown DropdownMsg

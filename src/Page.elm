@@ -68,7 +68,7 @@ viewWithoutHeader maybeViewer page { title, content } toRootMsg =
 viewHeader : Page -> Maybe Viewer -> Settings msg -> Html msg
 viewHeader page viewer ps =
     let
-        items =
+        ( items, customItems ) =
             mkMenu viewer ps
     in
     div [ class "bg-dark" ]
@@ -81,13 +81,13 @@ viewHeader page viewer ps =
                 [ href "/", style "font-family" "'Lobster', cursive" ]
                 [ text " Еджудж"
                 ]
-            |> Navbar.items []
-            |> Navbar.customItems items
+            |> Navbar.items items
+            |> Navbar.customItems customItems
             |> Navbar.view ps.navbar
         ]
 
 
-mkMenu : Maybe Viewer -> Settings msg -> List (Navbar.CustomItem msg)
+mkMenu : Maybe Viewer -> Settings msg -> ( List (Navbar.Item msg), List (Navbar.CustomItem msg) )
 mkMenu mViewer ps =
     case mViewer of
         Just viewer ->
@@ -97,7 +97,7 @@ mkMenu mViewer ps =
             mkGuestMenu ps
 
 
-mkViewerMenu : Viewer -> Settings msg -> List (Navbar.CustomItem msg)
+mkViewerMenu : Viewer -> Settings msg -> ( List (Navbar.Item msg), List (Navbar.CustomItem msg) )
 mkViewerMenu viewer ps =
     let
         role =
@@ -109,18 +109,7 @@ mkViewerMenu viewer ps =
         usernameStr =
             Username.toString username
 
-        adminMenu =
-            case role of
-                Admin ->
-                    mkAdminMenu ps
-
-                User ->
-                    []
-
-                Guest ->
-                    []
-
-        items =
+        customItems =
             [ Navbar.customItem <|
                 Dropdown.dropdown
                     ps.userDropdown
@@ -135,30 +124,24 @@ mkViewerMenu viewer ps =
                         ]
                     }
             ]
+
+        items =
+            [ Navbar.itemLink [ Route.href Route.TaskList ] [ text "Задачи" ]
+            , Navbar.itemLink [ Route.href Route.UserResults ] [ text "Результаты" ]
+            ]
     in
-    items
+    ( items, customItems )
 
 
-mkAdminMenu : Settings msg -> List (Html msg)
-mkAdminMenu ps =
-    [ Dropdown.dropdown
-        ps.userDropdown
-        { options = []
-        , toggleMsg = ps.toUserDropdownMsg
-        , toggleButton =
-            Dropdown.toggle [ Button.primary ] [ text "My dropdown" ]
-        , items = []
-        }
-    ]
-
-
-mkGuestMenu : Settings msg -> List (Navbar.CustomItem msg)
+mkGuestMenu : Settings msg -> ( List (Navbar.Item msg), List (Navbar.CustomItem msg) )
 mkGuestMenu ps =
-    [ Navbar.customItem <|
-        Button.linkButton [ Button.light, Button.attrs [ Spacing.mx2, Route.href Route.Register ] ] [ text "Регистрация" ]
-    , Navbar.customItem <|
-        Button.linkButton [ Button.outlineLight, Button.attrs [ Spacing.mx2, Route.href Route.Login ] ] [ text "Вход" ]
-    ]
+    ( []
+    , [ Navbar.customItem <|
+            Button.linkButton [ Button.light, Button.attrs [ Spacing.mx2, Route.href Route.Register ] ] [ text "Регистрация" ]
+      , Navbar.customItem <|
+            Button.linkButton [ Button.outlineLight, Button.attrs [ Spacing.mx2, Route.href Route.Login ] ] [ text "Вход" ]
+      ]
+    )
 
 
 viewFooter : Html msg

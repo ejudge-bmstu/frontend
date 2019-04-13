@@ -66,7 +66,7 @@ type alias Task =
 type alias ValidTask =
     { name : String
     , description : String
-    , category : Uuid
+    , category : Maybe Uuid
     , access : ReportAccess
     , pythonLimits : Limit
     , cLimits : Limit
@@ -96,12 +96,12 @@ type alias Limit =
 
 validateTask : Task -> Maybe ValidTask
 validateTask task =
-    case ( task.category, task.tests, task.access ) of
-        ( Just category, Just tests, Just access ) ->
+    case ( task.tests, task.access ) of
+        ( Just tests, Just access ) ->
             Just
                 { name = task.name
                 , description = task.description
-                , category = category
+                , category = task.category
                 , access = access
                 , pythonLimits = task.pythonLimits
                 , cLimits = task.cLimits
@@ -162,18 +162,9 @@ view : Model -> { title : String, content : Html Msg }
 view model =
     { title = "Добавление задачи"
     , content =
-        case model.categories of
-            [] ->
-                divWithModal
-                    (ModalMessage (Just "Добавьте хотя бы одну категорию"))
-                    CloseModalRedirect
-                    []
-                    []
-
-            _ ->
-                divWithModal model.modalMessage CloseModal [ Spacing.mt3 ] <|
-                    [ viewForm model
-                    ]
+        divWithModal model.modalMessage CloseModal [ Spacing.mt3 ] <|
+            [ viewForm model
+            ]
     }
 
 
@@ -221,12 +212,19 @@ viewForm model =
                                 , Textarea.onInput <| EnterOutput ix
                                 ]
                             ]
-                        , Form.col [ Col.sm2 ] [ Button.button [ Button.warning, Button.onClick (DeleteExample ix) ] [ text "Удалить" ] ]
+                        , Form.col [ Col.sm2 ]
+                            [ Button.button
+                                [ Button.warning
+                                , Button.onClick (DeleteExample ix)
+                                , Button.attrs [ class "float-right" ]
+                                ]
+                                [ text "Удалить" ]
+                            ]
                         ]
                 )
                 model.task.examples
     in
-    Grid.container []
+    Grid.container [ class "content", Spacing.p3 ]
         [ Form.form [] <|
             [ Form.row []
                 [ Form.colLabel [ Col.sm2 ] [ text "Название задачи" ]
@@ -289,7 +287,14 @@ viewForm model =
             , Form.row []
                 [ Form.col [ Col.offsetSm2, Col.sm4 ] [ text "Пример входных даннных" ]
                 , Form.col [ Col.sm4 ] [ text "Пример выходных даннных" ]
-                , Form.col [ Col.sm2 ] [ Button.button [ Button.primary, Button.onClick AddExample ] [ text "Добавить" ] ]
+                , Form.col [ Col.sm2 ]
+                    [ Button.button
+                        [ Button.primary
+                        , Button.onClick AddExample
+                        , Button.attrs [ class "float-right" ]
+                        ]
+                        [ text "Добавить" ]
+                    ]
                 ]
             ]
                 ++ examplesView
@@ -426,7 +431,6 @@ type Msg
     | SendTask
     | SendTaskResponse (Api.Response ())
     | CloseModal
-    | CloseModalRedirect
     | EnterInput Int String
     | EnterOutput Int String
     | DeleteExample Int
@@ -540,9 +544,6 @@ update msg model =
 
         CloseModal ->
             ( { model | modalMessage = ModalMessage Nothing }, Cmd.none )
-
-        CloseModalRedirect ->
-            ( { model | modalMessage = ModalMessage Nothing }, Route.replaceUrl (Session.navKey model.session) Route.TaskList )
 
         EnterInput ix inp ->
             let
@@ -666,7 +667,6 @@ sendTask cred task =
             Http.multipartBody <|
                 [ Http.stringPart "name" task.name
                 , Http.stringPart "description" task.description
-                , Http.stringPart "category" (Uuid.toString task.category)
                 , Http.stringPart "time_limit_c" (String.fromInt task.cLimits.time)
                 , Http.stringPart "memory_limit_c" (String.fromInt task.cLimits.memory)
                 , Http.stringPart "time_limit_cpp" (String.fromInt task.cppLimits.time)
@@ -678,12 +678,16 @@ sendTask cred task =
                 ]
                     ++ inputs
                     ++ outputs
+                    ++ Maybe.withDefault [] category
 
         inputs =
             List.map (Http.stringPart "inputs[]" << .input) task.examples
 
         outputs =
             List.map (Http.stringPart "ouputs[]" << .output) task.examples
+
+        category =
+            Maybe.map (List.singleton << Http.stringPart "category" << Uuid.toString) task.category
     in
     Api.postExpectEmpty Endpoint.addTask cred body SendTaskResponse
 
